@@ -64,7 +64,7 @@ Teachers or administrators review the submissions manually and assign marks and 
 - Add test cases for DSA problems
 - Review uploaded answers
 - Assign marks and provide feedback
-- Manage students
+- Manage students and questions
 
 ---
 
