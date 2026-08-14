@@ -33,6 +33,7 @@ app.get("/", (req, res) => {
 });
 
 //Routing
-
+import userRoutes from "./routes/user.route"
+app.use("/api/v1/users",userRoutes)
 
 export default app;
