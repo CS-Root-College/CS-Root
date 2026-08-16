@@ -33,6 +33,7 @@
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "mongoose": "^9.9.1",
-    "saifstack-email": "^1.0.0"
+    "saifstack-email": "^1.0.0",
+    "zod": "^4.4.3"
   }
 }
