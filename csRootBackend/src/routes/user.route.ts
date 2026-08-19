@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { registerEmail } from "../controllers/user.controller";
+import { registerEmail, verifyEmail } from "../controllers/user.controller";
 
 const router = Router()
 
-router.post("/send-email",registerEmail)
+router.post("/register-email",registerEmail)
+router.post("/verify-email",verifyEmail)
+
 
 export default router;

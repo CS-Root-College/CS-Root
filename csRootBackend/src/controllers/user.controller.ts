@@ -9,6 +9,8 @@ import { verifyTwoFactorLayout } from "../emailLayouts/twoStepVerification";
 import { userValidation } from "../validation/user.validation";
 import redis from "../config/redis";
 import bcrypt from "bcryptjs";
+import generateAccessAndRefreshTokens from "../utils/jwt";
+import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
 
 const registerEmail = async (req: Request, res: Response) => {
   const { email, username, password } = req.body;
@@ -90,4 +92,96 @@ const registerEmail = async (req: Request, res: Response) => {
     );
 };
 
-export { registerEmail };
+const verifyEmail = async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+
+    const storedOtp = await redis.get(`otp:${email}`);
+
+    if (!storedOtp) {
+        throw new apiError(
+            400,
+            "Otp expired or not found. Please request a new one."
+        );
+    }
+
+    if (storedOtp !== otp) {
+        throw new apiError(400, "Incorrect otp");
+    }
+
+    const registeredUserData = await redis.get(
+        `registerationData:${email}`
+    );
+
+    if (!registeredUserData) {
+        throw new apiError(
+            400,
+            "Registration session expired. Please register again."
+        );
+    }
+
+    const userData = JSON.parse(registeredUserData);
+
+    const user = await User.create({
+        email: userData.email,
+        username: userData.username,
+        password: userData.password,
+        isEmailVerified: true,
+        authProvider: "email"
+    });
+
+    await redis.del(
+        `otp:${email}`,
+        `registerationData:${email}`,
+        `pendingUsername:${userData.username}`
+    );
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshTokens(user._id);
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+    };
+
+    try {
+        await sendEmail({
+            email,
+            subject: "Welcome to CS Root",
+            layout: welcomeEmailLayout(user.username)
+        })
+    } catch (error) {
+        console.error("Failed to send welcome email:", error);
+    }
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000,
+        })
+        .cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            maxAge: 14 * 24 * 60 * 60 * 1000,
+        })
+        .json(
+            new apiResponse(
+                200,
+                "Welcome! User registered successfully.",
+                {
+                    user: {
+                        _id: user._id,
+                        email: user.email,
+                        username: user.username,
+                    },
+                }
+            )
+        );
+};
+
+
+export { 
+  registerEmail,
+  verifyEmail
+
+};
