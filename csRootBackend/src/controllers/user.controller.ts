@@ -4,13 +4,12 @@ import apiResponse from "../utils/apiResponse";
 import { User } from "../models/user.model";
 import { verifyEmailLayout } from "../emailLayouts/emailVerification";
 import sendEmail from "../service/sendEmail.js";
-import crypto from "crypto";
-import { verifyTwoFactorLayout } from "../emailLayouts/twoStepVerification";
 import { userValidation } from "../validation/user.validation";
 import redis from "../config/redis";
 import bcrypt from "bcryptjs";
 import generateAccessAndRefreshTokens from "../utils/jwt";
 import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
+import { sendTwoStepVerification } from "../service/twoStepVerification";
 
 const registerEmail = async (req: Request, res: Response) => {
   const { email, username, password } = req.body;
@@ -179,9 +178,206 @@ const verifyEmail = async (req: Request, res: Response) => {
         );
 };
 
+const login = async (req: Request, res: Response) => {
+    const { email, password, username } = req.body
+
+    if (!email && !username) {
+        throw new apiError(404, "Please provide email or username")
+    }
+
+    if (!password) {
+        throw new apiError(404, "Please provide password")
+    }
+
+    const user = await User.findOne({
+        $or: [
+            { email },
+            { username }
+        ]
+    })
+
+    if (!user) {
+        throw new apiError(400, "User doesn't exist")
+    }
+
+    if (!user.password) {
+        throw new apiError(400, "Password didn't exist")
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+        password,
+        user.password
+    )
+
+    if (!isPasswordCorrect) {
+        throw new apiError(401, "Incorrect password")
+    }
+
+    if (user.isBanned) {
+        throw new apiError(
+            403,
+            "Your account has been banned"
+        )
+    }
+
+    if (user.twoStepVerification) {
+        await sendTwoStepVerification(user)
+
+        return res.status(200).json(
+            new apiResponse(
+                200,
+                "Please confirm your account",
+                {
+                    twoFactorRequired: true,
+                    identifier: email ?? username,
+                }
+            )
+        );
+
+    }
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshTokens(
+            user._id
+        )
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+    }
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000,
+        })
+        .cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            maxAge: 14 * 24 * 60 * 60 * 1000,
+        })
+        .json(
+            new apiResponse(
+                200,
+                "User logged in successfully",
+                {
+                    user: {
+                        _id: user._id,
+                        email: user.email,
+                        username: user.username,
+                    },
+                }
+            )
+        )
+}
+
+const verifyTwoStepVerification = async (
+    req: Request,
+    res: Response
+) => {
+    const { email, username, code } = req.body
+
+    if (!email && !username) {
+        throw new apiError(
+            400,
+            "Please provide either email or username"
+        )
+    }
+
+    if (!code) {
+        throw new apiError(
+            400,
+            "Please provide verification code"
+        )
+    }
+
+    const user = await User.findOne({
+        $or: [
+            { email },
+            { username }
+        ]
+    })
+
+    if (!user) {
+        throw new apiError(
+            404,
+            "User doesn't exist"
+        )
+    }
+
+    const storedCode = await redis.get(
+        `twoStepVerification:code:${user.email}`
+    )
+
+    if (!storedCode) {
+        throw new apiError(
+            400,
+            "Verification code expired"
+        )
+    }
+
+    if (storedCode !== code) {
+        throw new apiError(
+            401,
+            "Invalid verification code"
+        )
+    }
+
+    if (user.isBanned) {
+        throw new apiError(
+            403,
+            "Your account has been banned"
+        )
+    }
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshTokens(
+            user._id
+        )
+
+    await redis.del(
+        `twoStepVerification:code:${user.email}`
+    )
+
+    user.lastLogin = new Date()
+    await user.save()
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+    }
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, {
+            ...cookieOptions,
+            maxAge: 15 * 60 * 1000,
+        })
+        .cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            maxAge: 14 * 24 * 60 * 60 * 1000,
+        })
+        .json(
+            new apiResponse(
+                200,
+                "User logged in successfully",
+                {
+                    user: {
+                        _id: user._id,
+                        email: user.email,
+                        username: user.username,
+                    }
+                }
+            )
+        )
+}
 
 export { 
   registerEmail,
-  verifyEmail
-
+  verifyEmail,
+  login,
+  verifyTwoStepVerification
+  
 };
