@@ -34,9 +34,12 @@ app.get("/", (req, res) => {
 
 //Routing
 import userRoutes from "./routes/user.route"
-import errorHandler from "./utils/errorHandler";
-app.use("/api/v1/users",userRoutes)
+import githubRoutes from "./routes/github.route"
 
+app.use("/api/v1/users",userRoutes)
+app.use("/api/v1/oauth",githubRoutes)
+
+import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
 
 export default app;
