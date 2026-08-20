@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -45,7 +45,7 @@ export function Login() {
   }, [searchParams, refreshUser, navigate]);
 
   const handleSubmit = async (
-    e: FormEvent<HTMLFormElement>
+    e: any
   ) => {
     e.preventDefault();
 
