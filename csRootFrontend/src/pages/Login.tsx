@@ -104,7 +104,7 @@ export function Login() {
 
   const handleGithubLogin = () => {
     window.location.href =
-      `${api}/api/v1/users/github-login`;
+      `${api}/api/v1/oauth/github-login`;
   };
 
   return (
