@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import generateAccessAndRefreshTokens from "../utils/jwt";
 import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
 import { sendTwoStepVerification } from "../service/twoStepVerification";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 
 const registerEmail = async (req: Request, res: Response) => {
   const { email, username, password } = req.body;
@@ -374,10 +375,60 @@ const verifyTwoStepVerification = async (
         )
 }
 
+const getCurrentUser = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  if (!req.user) {
+    throw new apiError(401, "Unauthorized");
+  }
+
+  return res.status(200).json(
+    new apiResponse(200, "User fetched successfully", {
+      user: req.user,
+    })
+  );
+};
+
+const logout = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  if (!req.user) {
+    throw new apiError(401, "Unauthorized");
+  }
+
+  await redis.del(`refreshToken:${req.user._id}`);
+
+  req.user.refreshToken = undefined;
+
+  await req.user.save({
+    validateBeforeSave: false,
+  });
+
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json(
+    new apiResponse(200, "User logged out successfully")
+  );
+};
+
 export { 
   registerEmail,
   verifyEmail,
   login,
-  verifyTwoStepVerification
+  verifyTwoStepVerification,
+  getCurrentUser,
+  logout
   
 };

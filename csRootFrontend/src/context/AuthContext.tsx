@@ -20,7 +20,6 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
