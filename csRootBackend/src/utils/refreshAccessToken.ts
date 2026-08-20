@@ -20,7 +20,7 @@ const refreshAccessToken = async (
         decoded._id
     );
 
-    if(!user){
+    if (!user) {
         throw new apiError(
             401,
             "Invalid refresh token"
@@ -33,7 +33,7 @@ const refreshAccessToken = async (
             user.refreshToken || ""
         );
 
-    if(!isRefreshTokenValid){
+    if (!isRefreshTokenValid) {
         throw new apiError(
             401,
             "Invalid refresh token"
@@ -60,9 +60,11 @@ const refreshAccessToken = async (
             secure:
                 process.env.NODE_ENV ===
                 "production",
-            sameSite: "strict",
-            maxAge:
-                15 * 60 * 1000,
+            sameSite:
+                process.env.NODE_ENV === "production"
+                    ? "none"
+                    : "lax",
+            maxAge: 15 * 60 * 1000,
         }
     );
 
