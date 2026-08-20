@@ -138,7 +138,7 @@ const githubCallback = async (req: Request, res: Response) => {
         ...cookieOptions,
         maxAge: 14 * 24 * 60 * 60 * 1000,
     })
-    .redirect(`${process.env.WEB_URL}/problems`);
+    .redirect(`${process.env.WEB_URL}`);
 }
 
 export {
