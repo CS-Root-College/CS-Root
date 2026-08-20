@@ -12,7 +12,7 @@ body {
 .navbar {
     width: 100%;
     height: 60px;
-    background-color: white;
+    background-color: black;
     padding: 0 20px;
 
     display: flex;
@@ -57,7 +57,7 @@ body {
 }
 
 .dropdown-title {
-    color: black;
+    color: white;
     cursor: pointer;
     font-weight: bold;
 
@@ -126,7 +126,7 @@ body {
 }
 
 .btn button { 
-    background-color: #04AA6D;
+    background-color: #738AFF;
 
     color: white;
 
@@ -151,17 +151,21 @@ body {
     display: flex;
     justify-content: center;
     gap: 50px;
-    margin-top: 20px;
+    margin-top: 0;
     position: fixed;
      top:60px;
      left:0%;
      width:100%;
      z-index: 999;
+     background-color: #111522;
+     height:50px;
+     padding-top: 15px;
 }
 .navcontainer a{
     color:white;
     font-weight:bold;
     text-decoration:none;
+    
     
 }
 .navcontainer a:hover{
