@@ -347,7 +347,7 @@ body {
     position: absolute;
 
     top: 30px;
-    right: 100px;
+    right: 120px;
 
     width: 450px;
     height: 280px;
@@ -394,5 +394,227 @@ body {
 
     font-size: 16px;
     font-weight: bold;
+}
+  .os {
+    background-color: #F1F8F0;
+    min-height: 550px;
+    padding-top: 30px;
+    gap: 0;
+    position: relative;
+}
+
+.ostitle {
+    color: black;
+    margin-left: 100px;
+    margin-top: 0;
+    font-weight: bold;
+    font-size: 50px;
+}
+
+.ostitle1 {
+    color: #2E8B1E;
+    margin-left: 100px;
+    margin-top: 5px;
+    font-weight: bold;
+    font-size: 30px;
+}
+
+.osline {
+    width: 200px;
+    height: 8px;
+    background-color: #2E8B1E;
+    position: relative;
+    margin-left: 100px;
+    margin-top: 8px;
+}
+
+.osline::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-color: #2E8B1E;
+    border-radius: 50%;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.ospara {
+    margin-top: 15px;
+    margin-left: 100px;
+    font-weight: bold;
+    font-size: 30px;
+    width: 500px;
+}
+
+.ospara2 {
+    margin-top: 15px;
+    margin-left: 100px;
+    font-weight: bold;
+    font-size: 20px;
+    color: black;
+}
+
+.osbtn1 {
+    background-color: #2E8B1E;
+    margin-left: 100px;
+    height: 30px;
+    width: 200px;
+    border: none;
+    border-radius: 30px;
+    margin-top: 20px;
+    color: white;
+}
+
+.osbtn2 {
+    background-color: white;
+    margin-left: 110px;
+    height: 30px;
+    width: 200px;
+    border-radius: 30px;
+    margin-top: 20px;
+    border: 2px solid #2E8B1E;
+    color: #2E8B1E;
+}
+
+.osproblem {
+    position: absolute;
+    top: 30px;
+    right: 80px;
+    width: 500px;
+    background-color: #e5e7eb;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.problem-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 24px;
+    color: black;
+}
+
+.mcq {
+    background-color: white;
+    border: 1px solid #2E8B1E;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.mcqheader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #E8F5E4;
+    color: #2E8B1E;
+}
+
+.mcqheader h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.question-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #2E8B1E;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.mcqproblem {
+    padding: 12px 15px;
+}
+
+.mcqproblem p {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.mcqproblem label {
+    display: block;
+    margin: 10px 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.mcqproblem input {
+    accent-color: #2E8B1E;
+    margin-right: 8px;
+}
+
+.theory {
+    background-color: white;
+    border: 1px solid #2E8B1E;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.theoryheader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #E8F5E4;
+    color: #2E8B1E;
+}
+
+.theoryheader h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.theory-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #2E8B1E;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.theoryproblem {
+    padding: 12px 15px;
+}
+
+.theoryproblem p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.answer-line {
+    width: 100%;
+    height: 1px;
+    background-color: #D5D5D5;
+    margin-top: 10px;
+}
+
+.trybtn {
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 30px;
+    background-color: #2E8B1E;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
 }
   
