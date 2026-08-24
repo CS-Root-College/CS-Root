@@ -6,12 +6,7 @@ import {
 } from "react-router-dom";
 import {
   ChevronDown,
-  Code2,
-  LayoutDashboard,
-  LogOut,
   Menu,
-  Settings,
-  User,
   X,
 } from "lucide-react";
 
@@ -395,37 +390,35 @@ export const Navbar = memo(() => {
 
               <Link
                 to="/problems"
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   isActive("/problems")
                     ? "bg-zinc-900 text-white"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
                 }`}
               >
-                <Code2 size={16} />
                 Problems
               </Link>
 
               <Link
                 to="/dashboard"
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   isActive("/dashboard")
                     ? "bg-zinc-900 text-white"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
                 }`}
               >
-                <LayoutDashboard size={16} />
                 Dashboard
               </Link>
 
               <Link
-                to="/roadmap"
+                to="/compiler"
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  isActive("/roadmap")
+                  isActive("/compiler")
                     ? "bg-zinc-900 text-white"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
                 }`}
               >
-                Roadmap
+                Compiler
               </Link>
             </>
           )}
@@ -502,40 +495,43 @@ export const Navbar = memo(() => {
 
                   <Link
                     to="/profile"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    <User size={17} />
                     Profile
                   </Link>
 
                   <Link
                     to="/dashboard"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    <LayoutDashboard size={17} />
                     Dashboard
                   </Link>
 
                   <Link
                     to="/submissions"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    <Code2 size={17} />
                     My Submissions
                   </Link>
 
                   <Link
                     to="/progress"
-                    className="flex items-center rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
                     Progress
                   </Link>
 
                   <Link
-                    to="/settings"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    to="/roadmap"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    <Settings size={17} />
+                    Roadmap
+                  </Link>
+
+                  <Link
+                    to="/settings"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                  >
                     Settings
                   </Link>
 
@@ -544,9 +540,8 @@ export const Navbar = memo(() => {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    <LogOut size={17} />
                     Logout
                   </button>
                 </div>
@@ -594,179 +589,183 @@ export const Navbar = memo(() => {
               </div>
             )}
 
-            <div>
-              {isAuthenticated ? (
-                <>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block border-b border-zinc-900 py-3.5 text-sm font-medium ${
+                    isActive("/")
+                      ? "text-white"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Home
+                </Link>
+
+                <Link
+                  to="/problems"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block border-b border-zinc-900 py-3.5 text-sm font-medium ${
+                    isActive("/problems")
+                      ? "text-white"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Problems
+                </Link>
+
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block border-b border-zinc-900 py-3.5 text-sm font-medium ${
+                    isActive("/dashboard")
+                      ? "text-white"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+
+                <Link
+                  to="/compiler"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block border-b border-zinc-900 py-3.5 text-sm font-medium ${
+                    isActive("/compiler")
+                      ? "text-white"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Compiler
+                </Link>
+
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Profile
+                </Link>
+
+                <Link
+                  to="/submissions"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  My Submissions
+                </Link>
+
+                <Link
+                  to="/progress"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Progress
+                </Link>
+
+                <Link
+                  to="/roadmap"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Roadmap
+                </Link>
+
+                <Link
+                  to="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Settings
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full py-3.5 text-left text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <MobileDropdown
+                  label="Tutorials"
+                  items={tutorialItems}
+                  open={mobileTutorialsOpen}
+                  onToggle={() =>
+                    setMobileTutorialsOpen(
+                      (prev) => !prev
+                    )
+                  }
+                  onNavigate={() =>
+                    setMobileOpen(false)
+                  }
+                />
+
+                <MobileDropdown
+                  label="Practice"
+                  items={practiceItems}
+                  open={mobilePracticeOpen}
+                  onToggle={() =>
+                    setMobilePracticeOpen(
+                      (prev) => !prev
+                    )
+                  }
+                  onNavigate={() =>
+                    setMobileOpen(false)
+                  }
+                />
+
+                <MobileDropdown
+                  label="Resources"
+                  items={resourceItems}
+                  open={mobileResourcesOpen}
+                  onToggle={() =>
+                    setMobileResourcesOpen(
+                      (prev) => !prev
+                    )
+                  }
+                  onNavigate={() =>
+                    setMobileOpen(false)
+                  }
+                />
+
+                <Link
+                  to="/roadmap"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Roadmap
+                </Link>
+
+                <Link
+                  to="/about"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  About
+                </Link>
+
+                <div className="mt-5 flex gap-2">
                   <Link
-                    to="/"
+                    to="/login"
                     onClick={() => setMobileOpen(false)}
-                    className={`block border-b border-zinc-900 py-3.5 text-sm font-medium ${
-                      isActive("/")
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
+                    className="flex-1 rounded-lg border border-zinc-800 py-2.5 text-center text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
                   >
-                    Home
+                    Login
                   </Link>
 
                   <Link
-                    to="/problems"
+                    to="/register"
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 border-b border-zinc-900 py-3.5 text-sm font-medium ${
-                      isActive("/problems")
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
+                    className="flex-1 rounded-lg bg-white py-2.5 text-center text-sm font-semibold text-black transition hover:bg-zinc-200"
                   >
-                    <Code2 size={17} />
-                    Problems
+                    Sign Up
                   </Link>
-
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 border-b border-zinc-900 py-3.5 text-sm font-medium ${
-                      isActive("/dashboard")
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    <LayoutDashboard size={17} />
-                    Dashboard
-                  </Link>
-
-                  <Link
-                    to="/roadmap"
-                    onClick={() => setMobileOpen(false)}
-                    className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    Roadmap
-                  </Link>
-
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    <User size={17} />
-                    Profile
-                  </Link>
-
-                  <Link
-                    to="/submissions"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    <Code2 size={17} />
-                    My Submissions
-                  </Link>
-
-                  <Link
-                    to="/progress"
-                    onClick={() => setMobileOpen(false)}
-                    className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    Progress
-                  </Link>
-
-                  <Link
-                    to="/settings"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    <Settings size={17} />
-                    Settings
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-2 py-3.5 text-left text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    <LogOut size={17} />
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <MobileDropdown
-                    label="Tutorials"
-                    items={tutorialItems}
-                    open={mobileTutorialsOpen}
-                    onToggle={() =>
-                      setMobileTutorialsOpen(
-                        (prev) => !prev
-                      )
-                    }
-                    onNavigate={() =>
-                      setMobileOpen(false)
-                    }
-                  />
-
-                  <MobileDropdown
-                    label="Practice"
-                    items={practiceItems}
-                    open={mobilePracticeOpen}
-                    onToggle={() =>
-                      setMobilePracticeOpen(
-                        (prev) => !prev
-                      )
-                    }
-                    onNavigate={() =>
-                      setMobileOpen(false)
-                    }
-                  />
-
-                  <MobileDropdown
-                    label="Resources"
-                    items={resourceItems}
-                    open={mobileResourcesOpen}
-                    onToggle={() =>
-                      setMobileResourcesOpen(
-                        (prev) => !prev
-                      )
-                    }
-                    onNavigate={() =>
-                      setMobileOpen(false)
-                    }
-                  />
-
-                  <Link
-                    to="/roadmap"
-                    onClick={() => setMobileOpen(false)}
-                    className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    Roadmap
-                  </Link>
-
-                  <Link
-                    to="/about"
-                    onClick={() => setMobileOpen(false)}
-                    className="block border-b border-zinc-900 py-3.5 text-sm font-medium text-zinc-400 hover:text-white"
-                  >
-                    About
-                  </Link>
-
-                  <div className="mt-5 flex gap-2">
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex-1 rounded-lg border border-zinc-800 py-2.5 text-center text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-                    >
-                      Login
-                    </Link>
-
-                    <Link
-                      to="/register"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex-1 rounded-lg bg-white py-2.5 text-center text-sm font-semibold text-black transition hover:bg-zinc-200"
-                    >
-                      Sign Up
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
