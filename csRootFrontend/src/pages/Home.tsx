@@ -6,6 +6,7 @@ import {
   Search,
 } from "lucide-react";
 import { Footer } from "./Footer";
+import { SubNavbar } from "../components/SubNabvar";
 
 const subjects = [
   {
@@ -182,6 +183,8 @@ export function Home() {
   );
 
   return (
+    <>
+      <SubNavbar />
     <div className="min-h-screen overflow-x-hidden bg-[#282A35] text-white">
       <section className="relative overflow-hidden border-b border-zinc-800">
         <div className="pointer-events-none absolute inset-0">
@@ -613,5 +616,6 @@ export function Home() {
 
       <Footer />
     </div>
+    </>
   );
 }

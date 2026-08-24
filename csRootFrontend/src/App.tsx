@@ -5,7 +5,6 @@ import { Navbar } from "./components/Navbar";
 import { Login } from "./pages/Login";
 import { CreateAccount } from "./pages/CreateAccount";
 import { VerifyEmailOtp } from "./pages/VerifyEmailOtp";
-import { SubNavbar } from "./components/SubNabvar";
 import { Home } from "./pages/Home";
 
 function NotFound() {
@@ -25,7 +24,6 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-black">
         <Navbar />
-        <SubNavbar />
 
         <main>
           <Routes>
