@@ -407,32 +407,33 @@ const logout = async (
     req: AuthenticatedRequest,
     res: Response
 ) => {
-    if (!req.user) {
-        throw new apiError(401, "Unauthorized");
+    if (req.user) {
+        await redis.del(`refreshToken:${req.user._id}`);
+
+        req.user.refreshToken = undefined;
+
+        await req.user.save({
+            validateBeforeSave: false,
+        });
     }
 
-    await redis.del(`refreshToken:${req.user._id}`);
-
-    req.user.refreshToken = undefined;
-
-    await req.user.save({
-        validateBeforeSave: false,
-    });
-
-    res.clearCookie("accessToken", {
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-    });
+        sameSite: process.env.NODE_ENV === "production"
+            ? "none"
+            : "lax",
+        path: "/",
+    } as const;
 
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-    });
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
 
     return res.status(200).json(
-        new apiResponse(200, "User logged out successfully")
+        new apiResponse(
+            200,
+            "User logged out successfully"
+        )
     );
 };
 
