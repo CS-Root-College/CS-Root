@@ -37,9 +37,11 @@ app.get("/", (req, res) => {
 //Routing
 import userRoutes from "./routes/user.route"
 import githubRoutes from "./routes/github.route"
+import compilerRoutes from "./routes/compiler.route";
 
 app.use("/api/v1/users",userRoutes)
 app.use("/api/v1/oauth",githubRoutes)
+app.use("/api/v1/compiler",compilerRoutes)
 
 import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
