@@ -10,10 +10,22 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.WEB_URL,
-    credentials: true,
+    origin: (origin, callback) => {
+    const allowedOrigins = [
+        process.env.WEB_URL
+    ];
+
+    if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS."));
+},
+credentials: true
   })
 );
+
+
 app.use(express.urlencoded({
     extended: true
 }));
