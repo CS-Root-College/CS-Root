@@ -112,7 +112,7 @@ export const AuthProvider = ({
         setIsLoading(true);
 
         await axios.post(
-          `${api}/api/v1/users/logout`,
+          `${api}/users/logout`,
           {},
           {
             withCredentials: true,
