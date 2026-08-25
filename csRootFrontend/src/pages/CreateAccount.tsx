@@ -40,7 +40,7 @@ export function CreateAccount() {
       setLoading(true);
 
       await axios.post(
-        `${api}/api/v1/users/register-email`,
+        `${api}/users/register-email`,
         {
           username: username.trim(),
           email: email.trim(),

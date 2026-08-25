@@ -57,7 +57,7 @@ export function VerifyEmailOtp() {
       setLoading(true);
 
       const response = await axios.post(
-        `${api}/api/v1/users/verify-email`,
+        `${api}/users/verify-email`,
         {
           email: email.trim(),
           otp: otp.trim(),
@@ -71,14 +71,6 @@ export function VerifyEmailOtp() {
         "Email verified:",
         response.data
       );
-
-      /*
-       * Backend has created the user and
-       * generated authentication cookies.
-       *
-       * Get the authenticated user and
-       * update AuthContext.
-       */
       await refreshUser();
 
       navigate("/");

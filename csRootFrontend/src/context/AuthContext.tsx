@@ -11,9 +11,50 @@ import axios from "axios";
 
 export interface User {
   _id: string;
+  name?: string;
   username: string;
-  email: string;
+  email?: string;
   profilePicture?: string;
+  bio?: string;
+
+  subscription: {
+    plan: "free" | "premium";
+    startedAt?: string | null;
+    expiresAt: string | null;
+  };
+
+  reputation: number;
+  showReputation: boolean;
+
+  isEmailVerified: boolean;
+  twoStepVerification: boolean;
+
+  githubUsername?: string;
+
+  totalPoints: number;
+  experiencePoints: number;
+  streaks: number;
+  lastSolvedDate?: string;
+  badge?: string;
+  badgesCount: number;
+
+  role: "user" | "admin";
+  isActive: boolean;
+  isBanned: boolean;
+
+  activityVisibility: string;
+  authProvider?: string;
+
+  lastLogin?: string;
+  lastActiveAt?: string;
+
+  preferredLanguage?: string;
+  enableProblemTimer: boolean;
+
+  friends: number;
+
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthContextType {
@@ -45,7 +86,7 @@ export const AuthProvider = ({
         setIsLoading(true);
 
         const response = await axios.get(
-          `${api}/api/v1/users/me`,
+          `${api}/users/me`,
           {
             withCredentials: true,
           }

@@ -6,6 +6,8 @@ import { Login } from "./pages/Login";
 import { CreateAccount } from "./pages/CreateAccount";
 import { VerifyEmailOtp } from "./pages/VerifyEmailOtp";
 import { Home } from "./pages/Home";
+import { Compiler } from "./pages/Compiler";
+import { Profile } from "./pages/Profile";
 
 function NotFound() {
   return (
@@ -30,8 +32,11 @@ function App() {
             {/* Home */}
             <Route path="/" element={<Home />} />
 
+            <Route path="/compiler" element={<Compiler />} />
+
             {/* Authentication */}
             <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
 
             <Route path="/register" element={<CreateAccount />} />
 

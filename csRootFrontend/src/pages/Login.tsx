@@ -67,7 +67,7 @@ export function Login() {
       const isEmail = identifier.includes("@");
 
       await axios.post(
-        `${api}/api/v1/users/login`,
+        `${api}/users/login`,
         {
           ...(isEmail
             ? {
@@ -104,7 +104,7 @@ export function Login() {
 
   const handleGithubLogin = () => {
     window.location.href =
-      `${api}/api/v1/oauth/github-login`;
+      `${api}/oauth/github-login`;
   };
 
   return (

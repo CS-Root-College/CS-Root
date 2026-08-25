@@ -247,9 +247,8 @@ const login = async (req: Request, res: Response) => {
     const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production"
-            ? "none"
-            : "lax",
+        sameSite: "lax",
+        path: "/",
     } as const;
 
     return res
