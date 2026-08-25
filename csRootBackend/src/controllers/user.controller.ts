@@ -244,11 +244,19 @@ const login = async (req: Request, res: Response) => {
             user._id
         )
 
+    // const cookieOptions = {
+    //     httpOnly: true,
+    //     secure: process.env.NODE_ENV === "production",
+    //     sameSite: "lax",
+    //     path: "/",
+    // } as const;
+
     const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
+        sameSite: process.env.NODE_ENV === "production"
+            ? "none"
+            : "lax",
     } as const;
 
     return res
