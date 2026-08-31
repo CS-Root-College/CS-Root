@@ -11,8 +11,7 @@ import {
   Code2,
   ArrowDownToLine,
   RotateCcw,
-  Sparkles,
-  Maximize2,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { LoginRequiredModal } from "../components/LoginRequiredModal";
