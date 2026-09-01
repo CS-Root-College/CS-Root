@@ -15,7 +15,6 @@ import {
   Save,
   HelpCircle,
   X,
-  Keyboard,
   Sliders,
   Database,
 } from "lucide-react";
