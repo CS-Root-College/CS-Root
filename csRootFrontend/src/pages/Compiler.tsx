@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import type { Monaco } from "@monaco-editor/react";
 import {
@@ -11,7 +11,13 @@ import {
   Code2,
   ArrowDownToLine,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Save,
+  HelpCircle,
+  X,
+  Keyboard,
+  Sliders,
+  Database,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { LoginRequiredModal } from "../components/LoginRequiredModal";
@@ -80,6 +86,8 @@ if __name__ == "__main__":
 
 type ActiveMobileTab = "editor" | "input" | "output";
 
+const STORAGE_KEY = "csroot_ide_saved_code";
+
 export function Compiler() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -90,8 +98,83 @@ export function Compiler() {
   const [requestError, setRequestError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [mobileTab, setMobileTab] = useState<ActiveMobileTab>("editor");
+
+  const [leftWidth, setLeftWidth] = useState(60);
+  const [inputHeight, setInputHeight] = useState(35);
+
+  const isDraggingHorizontal = useRef(false);
+  const isDraggingVertical = useRef(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const rightPaneRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.language) setLanguage(parsed.language);
+        if (parsed.code !== undefined) setCode(parsed.code);
+        if (parsed.stdin !== undefined) setStdin(parsed.stdin);
+      } catch {}
+    }
+  }, []);
+
+  const handleSave = useCallback(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ language, code, stdin })
+    );
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }, [language, code, stdin]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDraggingHorizontal.current && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      if (newWidth >= 20 && newWidth <= 80) {
+        setLeftWidth(newWidth);
+      }
+    }
+    if (isDraggingVertical.current && rightPaneRef.current) {
+      const paneRect = rightPaneRef.current.getBoundingClientRect();
+      const newHeight = ((e.clientY - paneRect.top) / paneRect.height) * 100;
+      if (newHeight >= 15 && newHeight <= 85) {
+        setInputHeight(newHeight);
+      }
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isDraggingHorizontal.current = false;
+    isDraggingVertical.current = false;
+    document.body.style.cursor = "default";
+    document.body.style.userSelect = "auto";
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
   const selectedLanguage = languages.find((item) => item.id === language);
 
@@ -452,6 +535,7 @@ export function Compiler() {
   };
 
   const handleReset = () => {
+    localStorage.removeItem(STORAGE_KEY);
     setCode(starterCode[language]);
     setStdin("");
     setResult(null);
@@ -526,9 +610,39 @@ export function Compiler() {
 
             <button
               type="button"
+              onClick={() => setShowHelpModal(true)}
+              title="How to Use CS ROOT IDE"
+              className="flex h-7 items-center justify-center rounded border border-[#3c3c3c] bg-[#252526] px-2.5 text-xs text-[#cccccc] shadow-sm transition hover:bg-[#2e2e2f] hover:text-[#007acc]"
+            >
+              <HelpCircle size={13} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">How to Use</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isRunning}
+              title="Save Code (Ctrl+S)"
+              className="flex h-7 items-center justify-center rounded border border-[#3c3c3c] bg-[#252526] px-2.5 text-xs text-[#cccccc] shadow-sm transition hover:bg-[#2e2e2f] hover:text-white disabled:opacity-50"
+            >
+              {saved ? (
+                <>
+                  <Check size={12} className="text-[#89d185] sm:mr-1.5" />
+                  <span className="hidden sm:inline text-[#89d185]">Saved</span>
+                </>
+              ) : (
+                <>
+                  <Save size={12} className="sm:mr-1.5" />
+                  <span className="hidden sm:inline">Save</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
               onClick={handleReset}
               disabled={isRunning}
-              title="Reset Code"
+              title="Reset Code & Clear Storage"
               className="flex h-7 items-center justify-center rounded border border-[#3c3c3c] bg-[#252526] px-2.5 text-xs text-[#cccccc] shadow-sm transition hover:bg-[#2e2e2f] hover:text-white disabled:opacity-50"
             >
               <RotateCcw size={12} className="sm:mr-1.5" />
@@ -606,10 +720,11 @@ export function Compiler() {
           </button>
         </div>
 
-        <main className="grid min-h-0 flex-1 lg:grid-cols-[1.4fr_0.8fr]">
+        <main ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
           <section
-            className={`flex h-full flex-col border-b border-[#2b2b2b] lg:border-b-0 lg:border-r ${
-              mobileTab === "editor" ? "flex" : "hidden lg:flex"
+            style={{ width: `${leftWidth}%` }}
+            className={`h-full flex-col border-b border-[#2b2b2b] lg:border-b-0 ${
+              mobileTab === "editor" ? "flex w-full lg:w-auto" : "hidden lg:flex"
             }`}
           >
             <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#252526] bg-[#181818] px-2">
@@ -682,14 +797,26 @@ export function Compiler() {
             </div>
           </section>
 
+          <div
+            onMouseDown={() => {
+              isDraggingHorizontal.current = true;
+              document.body.style.cursor = "col-resize";
+              document.body.style.userSelect = "none";
+            }}
+            className="hidden lg:block w-1.5 cursor-col-resize bg-[#2b2b2b] hover:bg-[#007acc] transition-colors z-10 select-none"
+          />
+
           <section
-            className={`grid h-full grid-rows-[35%_65%] bg-[#181818] ${
-              mobileTab !== "editor" ? "grid" : "hidden lg:grid"
+            ref={rightPaneRef}
+            style={{ width: `${100 - leftWidth}%` }}
+            className={`h-full flex-col bg-[#181818] ${
+              mobileTab !== "editor" ? "flex w-full lg:w-auto" : "hidden lg:flex"
             }`}
           >
             <div
+              style={{ height: `${inputHeight}%` }}
               className={`flex flex-col border-b border-[#2b2b2b] ${
-                mobileTab === "input" ? "flex" : "hidden lg:flex"
+                mobileTab === "input" ? "flex h-full lg:h-auto" : "hidden lg:flex"
               }`}
             >
               <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#2b2b2b] bg-[#181818] px-3">
@@ -709,8 +836,18 @@ export function Compiler() {
             </div>
 
             <div
-              className={`flex min-h-0 flex-col bg-[#1e1e1e] ${
-                mobileTab === "output" ? "flex" : "hidden lg:flex"
+              onMouseDown={() => {
+                isDraggingVertical.current = true;
+                document.body.style.cursor = "row-resize";
+                document.body.style.userSelect = "none";
+              }}
+              className="hidden lg:block h-1.5 cursor-row-resize bg-[#2b2b2b] hover:bg-[#007acc] transition-colors z-10 select-none"
+            />
+
+            <div
+              style={{ height: `${100 - inputHeight}%` }}
+              className={`flex min-h-0 flex-1 flex-col bg-[#1e1e1e] ${
+                mobileTab === "output" ? "flex h-full lg:h-auto" : "hidden lg:flex"
               }`}
             >
               <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#2b2b2b] bg-[#181818] px-3">
@@ -821,6 +958,102 @@ export function Compiler() {
           </section>
         </main>
       </div>
+
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm antialiased">
+          <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-lg border border-[#3c3c3c] bg-[#1e1e1e] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#2b2b2b] bg-[#181818] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded bg-[#007acc]/15 text-[#007acc]">
+                  <HelpCircle size={15} />
+                </div>
+                <h3 className="text-sm font-semibold text-zinc-100">
+                  How to Use CS ROOT IDE
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(false)}
+                className="rounded p-1 text-[#858585] transition hover:bg-[#252526] hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto p-4 text-xs text-[#cccccc]">
+              <div className="flex items-start gap-3 rounded-md border border-[#2b2b2b] bg-[#252526]/50 p-3">
+                <div className="mt-0.5 rounded bg-[#007acc]/20 p-1.5 text-[#007acc]">
+                  <Code2 size={16} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-200">1. Select Language & Code</h4>
+                  <p className="mt-0.5 text-[#999999]">
+                    Choose from C++, C, Java, Python, or JavaScript from the top dropdown. Monaco editor provides IntelliSense suggestions and syntax highlighting.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-md border border-[#2b2b2b] bg-[#252526]/50 p-3">
+                <div className="mt-0.5 rounded bg-[#007acc]/20 p-1.5 text-[#007acc]">
+                  <ArrowDownToLine size={16} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-200">2. Provide Custom Inputs (stdin)</h4>
+                  <p className="mt-0.5 text-[#999999]">
+                    If your program uses interactive inputs (like <code className="rounded bg-[#181818] px-1 py-0.5 font-mono text-[#89d185]">cin</code>, <code className="rounded bg-[#181818] px-1 py-0.5 font-mono text-[#89d185]">scanf</code>, or <code className="rounded bg-[#181818] px-1 py-0.5 font-mono text-[#89d185]">input()</code>), write them in the STDIN area before execution.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-md border border-[#2b2b2b] bg-[#252526]/50 p-3">
+                <div className="mt-0.5 rounded bg-[#007acc]/20 p-1.5 text-[#007acc]">
+                  <Play size={16} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-200">3. Run & View Output</h4>
+                  <p className="mt-0.5 text-[#999999]">
+                    Click <strong className="text-white">Run</strong> to send code to the compiler. The terminal displays real-time results, execution time, memory usage, and exit codes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-md border border-[#2b2b2b] bg-[#252526]/50 p-3">
+                <div className="mt-0.5 rounded bg-[#007acc]/20 p-1.5 text-[#007acc]">
+                  <Database size={16} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-200">4. Auto-Save & Local Storage</h4>
+                  <p className="mt-0.5 text-[#999999]">
+                    Press <kbd className="rounded bg-[#181818] px-1.5 py-0.5 font-mono text-[11px] text-[#007acc] border border-[#3c3c3c]">Ctrl + S</kbd> or click <strong className="text-white">Save</strong> to save your current work locally. Clicking <strong className="text-white">Reset</strong> wipes saved storage and restores default templates.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-md border border-[#2b2b2b] bg-[#252526]/50 p-3">
+                <div className="mt-0.5 rounded bg-[#007acc]/20 p-1.5 text-[#007acc]">
+                  <Sliders size={16} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-200">5. Resizable Panels</h4>
+                  <p className="mt-0.5 text-[#999999]">
+                    Drag the divider bars between the code editor, standard input, and terminal output to customize pane sizes.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-[#2b2b2b] bg-[#181818] p-3">
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(false)}
+                className="rounded bg-[#0e639c] px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-[#1177bb]"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <LoginRequiredModal
         open={showLoginModal}
