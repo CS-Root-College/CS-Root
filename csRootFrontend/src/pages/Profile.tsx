@@ -1,679 +1,389 @@
-import { Link } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+function formatDate(dateString?: string | Date | null) {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return isNaN(date.getTime())
+    ? "N/A"
+    : date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+}
 
 export function Profile() {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: user?.name || "",
+    bio: user?.bio || "",
+    githubUsername: user?.githubUsername || "",
+    profilePicture: user?.profilePicture || "",
+  });
+
+  const handleOpenEdit = () => {
+    setFormData({
+      name: user?.name || "",
+      bio: user?.bio || "",
+      githubUsername: user?.githubUsername || "",
+      profilePicture: user?.profilePicture || "",
+    });
+    setAvatarPreview(null);
+    setIsEditOpen(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setAvatarPreview(url);
+      setFormData((prev) => ({ ...prev, profilePicture: url }));
+    }
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Dispatch update payload (e.g. updateUser(formData))
+    setIsEditOpen(false);
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] bg-[#282A35] px-4 py-12 text-white">
-        <div className="mx-auto max-w-6xl">
-          <div className="h-8 w-40 animate-pulse rounded bg-zinc-800" />
-
-          <div className="mt-8 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-            <div className="h-72 animate-pulse rounded-2xl bg-[#1d1f27]" />
-            <div className="h-72 animate-pulse rounded-2xl bg-[#1d1f27]" />
-          </div>
-
-          <div className="mt-5 h-40 animate-pulse rounded-2xl bg-[#1d1f27]" />
-        </div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-black text-white">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#00FF87]" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#282A35] px-6 text-white">
-        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#1d1f27] p-8 text-center">
-          <h1 className="text-2xl font-bold">
-            You are not logged in
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-zinc-500">
-            Please login to view your profile.
+      <div className="flex min-h-screen w-full items-center justify-center bg-black px-4 text-white">
+        <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-[#0c0c0e] p-8 text-center shadow-2xl">
+          <h1 className="text-xl font-black tracking-tight">Not Logged In</h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Sign in to access your dashboard, streak, and badges.
           </p>
-
-          <Link
-            to="/login"
-            className="mt-7 inline-flex h-11 items-center justify-center rounded-full bg-[#04AA6D] px-7 text-sm font-bold text-white transition hover:bg-[#038c5a]"
+          <button
+            onClick={() => navigate("/login")}
+            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#00FF87] to-[#60EFFF] font-bold text-black shadow-lg shadow-[#00FF87]/20 transition-all hover:opacity-90 active:scale-95"
           >
-            Login
-          </Link>
+            Go to Login
+          </button>
         </div>
       </div>
     );
   }
 
-  const joinedDate = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
-    : "Not available";
+  const xpTotal = user.experiencePoints ?? 0;
+  const currentXp = xpTotal % 1000;
+  const level = Math.floor(xpTotal / 1000) + 1;
+  const progressPercent = Math.min(Math.max((currentXp / 1000) * 100, 0), 100);
 
-  const lastActive = user.lastActiveAt
-    ? new Date(user.lastActiveAt).toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "Not available";
-
-  const subscription =
-    user.subscription?.plan === "premium"
-      ? "Premium"
-      : "Free";
-
-  const language = user.preferredLanguage
-    ? user.preferredLanguage.charAt(0).toUpperCase() +
-      user.preferredLanguage.slice(1)
-    : "JavaScript";
-
-  const xpForNextLevel = 1000;
-  const currentLevelXp =
-    user.experiencePoints % xpForNextLevel;
-
-  const xpProgress =
-    (currentLevelXp / xpForNextLevel) * 100;
-
-  const currentLevel =
-    Math.floor(user.experiencePoints / xpForNextLevel) + 1;
-
-  const nextLevel = currentLevel + 1;
+  const stats = [
+    { label: "Points", value: (user.totalPoints ?? 0).toLocaleString(), color: "text-white" },
+    { label: "XP Points", value: xpTotal.toLocaleString(), color: "text-[#60EFFF]" },
+    { label: "Streak", value: `${user.streaks ?? 0}d`, color: "text-[#FF8A00]" },
+    { label: "Badges", value: user.badgesCount ?? 0, color: "text-[#00FF87]" },
+  ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#282A35] text-white">
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-black text-white">
+      {/* Radiant Glow Lights in Background */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[380px] w-[500px] -translate-x-1/2 rounded-full bg-[#00FF87]/15 blur-[120px]" />
+      <div className="pointer-events-none absolute top-1/3 -right-32 -z-10 h-[340px] w-[340px] rounded-full bg-[#60EFFF]/10 blur-[130px]" />
 
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#04AA6D]">
-              Account
-            </p>
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12 space-y-6">
+        
+        {/* Main Hero Profile Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-zinc-800/90 bg-[#09090b]/80 p-6 backdrop-blur-xl sm:p-8 shadow-2xl">
+          {/* Top Gradient Accent Bar */}
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#00FF87] via-[#60EFFF] to-[#FF8A00]" />
 
-            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              Profile
-            </h1>
-
-            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-500">
-              Your CS ROOT learning profile, progress and account
-              information.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Link
-              to="/settings"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 px-5 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 hover:bg-zinc-900 hover:text-white"
-            >
-              Settings
-            </Link>
-
-            <Link
-              to="/settings/profile"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#04AA6D] px-5 text-sm font-bold text-white transition hover:bg-[#038c5a]"
-            >
-              Edit Profile
-            </Link>
-          </div>
-        </div>
-
-        <section className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-[#1d1f27]">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#04AA6D] via-[#738AFF] to-[#E87500]" />
-
-          <div className="relative p-6 sm:p-8 lg:p-10">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
-
-              <div className="shrink-0">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-5 sm:gap-6">
+              {/* Avatar with Camera Trigger Overlay */}
+              <div className="relative group shrink-0">
                 <img
                   src={
+                    avatarPreview ||
                     user.profilePicture ||
                     "https://res.cloudinary.com/dlzi244at/image/upload/v1763367677/defaultPersonImage_exseqc.avif"
                   }
-                  alt={user.username}
-                  className="h-28 w-28 rounded-2xl border border-zinc-700 object-cover shadow-xl sm:h-32 sm:w-32"
+                  alt={user.username || "Avatar"}
+                  className="h-20 w-20 rounded-2xl border-2 border-zinc-700/80 object-cover shadow-2xl shadow-black/80 transition duration-300 group-hover:border-[#00FF87] sm:h-24 sm:w-24"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Change avatar"
+                  className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-gradient-to-tr from-[#00FF87] to-[#60EFFF] text-black shadow-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
                 />
               </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="break-words text-2xl font-bold sm:text-3xl lg:text-4xl">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="truncate text-2xl font-black sm:text-3xl">
                     {user.name || user.username}
-                  </h2>
-
+                  </h1>
                   {user.isEmailVerified && (
-                    <span className="rounded-full border border-[#04AA6D]/30 bg-[#04AA6D]/10 px-3 py-1 text-xs font-semibold text-[#04AA6D]">
-                      Verified
+                    <span className="rounded-full border border-[#00FF87]/30 bg-[#00FF87]/10 px-2.5 py-0.5 text-xs font-bold text-[#00FF87]">
+                      ✓ Verified
                     </span>
                   )}
                 </div>
-
-                <p className="mt-1 text-sm text-zinc-500">
-                  @{user.username}
-                </p>
-
-                {user.bio ? (
-                  <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-400">
-                    {user.bio}
-                  </p>
-                ) : (
-                  <p className="mt-5 text-sm italic text-zinc-600">
-                    No bio added yet.
-                  </p>
-                )}
-
-                <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-zinc-500">
-                  {user.email && (
-                    <span className="break-all">
-                      {user.email}
-                    </span>
-                  )}
-
-                  {user.githubUsername && (
-                    <span>
-                      GitHub: {user.githubUsername}
-                    </span>
-                  )}
+                <p className="mt-0.5 text-sm font-medium text-zinc-400">@{user.username}</p>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400 font-mono">
+                  {user.email && <span className="break-all">{user.email}</span>}
+                  {user.githubUsername && <span>gh/{user.githubUsername}</span>}
                 </div>
-              </div>
-
-              <div className="shrink-0 rounded-2xl border border-zinc-800 bg-[#282A35] p-5 sm:min-w-[190px]">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-600">
-                  Current Level
-                </p>
-
-                <p className="mt-2 text-4xl font-bold text-[#738AFF]">
-                  {currentLevel}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-500">
-                  CS ROOT learner
-                </p>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="mt-5 rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            {/* Quick Actions */}
+            <div className="flex w-full flex-row gap-3 sm:w-auto">
+              <button
+                type="button"
+                onClick={handleOpenEdit}
+                className="flex-1 sm:flex-initial rounded-xl bg-gradient-to-r from-[#00FF87] to-[#60EFFF] px-6 py-2.5 text-center text-sm font-bold text-black shadow-lg shadow-[#00FF87]/20 transition duration-200 hover:opacity-90 active:scale-95"
+              >
+                Edit Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/settings")}
+                className="flex-1 sm:flex-initial rounded-xl border border-zinc-800 bg-zinc-900/90 px-5 py-2.5 text-center text-sm font-semibold text-zinc-300 transition duration-200 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white active:scale-95"
+              >
+                Settings
+              </button>
+            </div>
+          </div>
+
+          {user.bio ? (
+            <p className="mt-6 border-t border-zinc-800/80 pt-5 text-sm leading-relaxed text-zinc-300">
+              {user.bio}
+            </p>
+          ) : (
+            <p className="mt-6 border-t border-zinc-800/80 pt-5 text-xs italic text-zinc-500">
+              No bio added yet.
+            </p>
+          )}
+        </div>
+
+        {/* Level Progression */}
+        <div className="rounded-3xl border border-zinc-800/90 bg-[#09090b]/80 p-6 backdrop-blur-xl">
+          <div className="flex items-center justify-between text-sm">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#738AFF]">
-                Learning Progress
-              </p>
-
-              <h2 className="mt-2 text-xl font-bold">
-                Level {currentLevel}
-              </h2>
-
-              <p className="mt-2 text-sm text-zinc-500">
-                Keep learning and solving problems to reach your next level.
-              </p>
+              <p className="text-lg font-black text-white sm:text-xl">Level {level}</p>
+              <p className="text-xs text-zinc-400">CS ROOT Learner</p>
             </div>
-
-            <div className="text-left lg:text-right">
-              <p className="text-sm font-semibold text-zinc-300">
-                {currentLevelXp.toLocaleString()} /{" "}
-                {xpForNextLevel.toLocaleString()} XP
+            <div className="text-right">
+              <p className="font-bold text-[#60EFFF]">
+                {currentXp.toLocaleString()} / 1,000 XP
               </p>
-
-              <p className="mt-1 text-xs text-zinc-600">
-                Level {nextLevel} next
-              </p>
+              <p className="text-xs text-zinc-500">Level {level + 1} next</p>
             </div>
           </div>
 
-          <div className="mt-6 h-3 overflow-hidden rounded-full bg-zinc-800">
+          <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-zinc-900 p-0.5 border border-zinc-800">
             <div
-              className="h-full rounded-full bg-[#738AFF] transition-all duration-500"
-              style={{
-                width: `${xpProgress}%`,
-              }}
+              className="h-full rounded-full bg-gradient-to-r from-[#00FF87] to-[#60EFFF] shadow-md shadow-[#00FF87]/40 transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
-        </section>
+        </div>
 
-        <section className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-800 sm:grid-cols-4">
-          <div className="bg-[#1d1f27] p-5 sm:p-6">
-            <p className="text-2xl font-bold text-white">
-              {user.totalPoints.toLocaleString()}
-            </p>
-
-            <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-              Total Points
-            </p>
-          </div>
-
-          <div className="bg-[#1d1f27] p-5 sm:p-6">
-            <p className="text-2xl font-bold text-[#738AFF]">
-              {user.experiencePoints.toLocaleString()}
-            </p>
-
-            <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-              Experience
-            </p>
-          </div>
-
-          <div className="bg-[#1d1f27] p-5 sm:p-6">
-            <p className="text-2xl font-bold text-[#E87500]">
-              {user.streaks}
-            </p>
-
-            <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-              Day Streak
-            </p>
-          </div>
-
-          <div className="bg-[#1d1f27] p-5 sm:p-6">
-            <p className="text-2xl font-bold text-[#04AA6D]">
-              {user.friends}
-            </p>
-
-            <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-              Friends
-            </p>
-          </div>
-        </section>
-
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_0.9fr]">
-
-          <div className="rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E87500]">
-                  Achievement
-                </p>
-
-                <h2 className="mt-2 text-xl font-bold">
-                  Your Progress
-                </h2>
-              </div>
-
-              <span className="rounded-full border border-zinc-700 bg-[#282A35] px-3 py-1 text-xs font-semibold text-zinc-400">
-                {user.badgesCount} Badges
-              </span>
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-zinc-800 bg-[#282A35] p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-600">
-                Current Badge
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="group relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#09090b]/80 p-5 text-center transition-all duration-300 hover:border-zinc-700"
+            >
+              <p className={`text-2xl font-black tracking-tight sm:text-3xl ${stat.color}`}>
+                {stat.value}
               </p>
-
-              <h3 className="mt-3 text-2xl font-bold text-[#E87500]">
-                {user.badge || "Getting Started"}
-              </h3>
-
-              <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-500">
-                Keep solving problems, completing tutorials and building your
-                streak to unlock more achievements.
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {stat.label}
               </p>
             </div>
+          ))}
+        </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-zinc-800 bg-[#282A35] p-5">
-                <p className="text-2xl font-bold text-white">
-                  {user.totalPoints}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-600">
-                  Points earned
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-zinc-800 bg-[#282A35] p-5">
-                <p className="text-2xl font-bold text-[#E87500]">
-                  {user.streaks}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-600">
-                  Current streak
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-zinc-800 bg-[#282A35] p-5">
-                <p className="text-2xl font-bold text-[#04AA6D]">
-                  {user.badgesCount}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-600">
-                  Badges
-                </p>
-              </div>
-            </div>
+        {/* Details List */}
+        <div className="divide-y divide-zinc-900 rounded-3xl border border-zinc-800/90 bg-[#09090b]/80 px-6 py-2 backdrop-blur-xl">
+          <div className="flex items-center justify-between py-4 text-sm">
+            <span className="text-zinc-400">Membership</span>
+            <span className="font-bold uppercase tracking-wider text-[#00FF87]">
+              {user.subscription?.plan || "Free"}
+            </span>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#04AA6D]">
-              Membership
-            </p>
-
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold">
-                {subscription}
-              </h2>
-
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
-                  subscription === "Premium"
-                    ? "bg-[#738AFF]/10 text-[#738AFF]"
-                    : "bg-zinc-800 text-zinc-400"
-                }`}
-              >
-                {subscription}
-              </span>
-            </div>
-
-            <div className="mt-7 space-y-5 border-t border-zinc-800 pt-5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">
-                  Account role
-                </span>
-
-                <span className="font-semibold capitalize text-zinc-300">
-                  {user.role}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">
-                  Account status
-                </span>
-
-                <span
-                  className={`font-semibold ${
-                    user.isActive
-                      ? "text-[#04AA6D]"
-                      : "text-red-400"
-                  }`}
-                >
-                  {user.isActive ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">
-                  Authentication
-                </span>
-
-                <span className="font-semibold capitalize text-zinc-300">
-                  {user.authProvider || "Email"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">
-                  Preferred Language
-                </span>
-
-                <span className="font-semibold capitalize text-zinc-300">
-                  {language}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-5 grid gap-5 lg:grid-cols-2">
-
-          <div className="rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#04AA6D]">
-              Learning
-            </p>
-
-            <h2 className="mt-2 text-xl font-bold">
-              Learning Profile
-            </h2>
-
-            <div className="mt-7 space-y-5">
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Preferred Language
-                </span>
-
-                <span className="text-right text-sm font-semibold capitalize text-zinc-200">
-                  {language}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Problem Timer
-                </span>
-
-                <span
-                  className={`text-sm font-semibold ${
-                    user.enableProblemTimer
-                      ? "text-[#04AA6D]"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  {user.enableProblemTimer
-                    ? "Enabled"
-                    : "Disabled"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Current Badge
-                </span>
-
-                <span className="text-right text-sm font-semibold text-zinc-200">
-                  {user.badge || "No badge yet"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5">
-                <span className="text-sm text-zinc-500">
-                  Badges Earned
-                </span>
-
-                <span className="text-sm font-semibold text-zinc-200">
-                  {user.badgesCount}
-                </span>
-              </div>
-
-            </div>
+          <div className="flex items-center justify-between py-4 text-sm">
+            <span className="text-zinc-400">Preferred Language</span>
+            <span className="font-semibold text-white capitalize">
+              {user.preferredLanguage || "JavaScript"}
+            </span>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#738AFF]">
-              Account
-            </p>
-
-            <h2 className="mt-2 text-xl font-bold">
-              Account Information
-            </h2>
-
-            <div className="mt-7 space-y-5">
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Username
-                </span>
-
-                <span className="max-w-[60%] break-all text-right text-sm font-semibold text-zinc-200">
-                  @{user.username}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Email
-                </span>
-
-                <span className="max-w-[60%] break-all text-right text-sm font-semibold text-zinc-200">
-                  {user.email || "Not available"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5 border-b border-zinc-800 pb-4">
-                <span className="text-sm text-zinc-500">
-                  Member Since
-                </span>
-
-                <span className="text-right text-sm font-semibold text-zinc-200">
-                  {joinedDate}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-5">
-                <span className="text-sm text-zinc-500">
-                  Last Active
-                </span>
-
-                <span className="text-right text-sm font-semibold text-zinc-200">
-                  {lastActive}
-                </span>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {user.showReputation && (
-          <section className="mt-5 rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E87500]">
-                  Community
-                </p>
-
-                <h2 className="mt-2 text-xl font-bold">
-                  Reputation
-                </h2>
-
-                <p className="mt-2 text-sm text-zinc-500">
-                  Your public reputation score on CS ROOT.
-                </p>
-              </div>
-
-              <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold text-[#E87500]">
-                  {user.reputation}
-                </span>
-
-                <span className="mb-1 text-sm text-zinc-600">
-                  / 5
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 h-2 overflow-hidden rounded-full bg-zinc-800">
-              <div
-                className="h-full rounded-full bg-[#E87500]"
-                style={{
-                  width: `${Math.min(
-                    Math.max(user.reputation, 0),
-                    5
-                  ) * 20}%`,
-                }}
-              />
-            </div>
-          </section>
-        )}
-
-        <section className="mt-5 rounded-2xl border border-zinc-800 bg-[#1d1f27] p-6 sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-400">
-            Security
-          </p>
-
-          <h2 className="mt-2 text-xl font-bold">
-            Account Security
-          </h2>
-
-          <div className="mt-7 grid gap-4 sm:grid-cols-2">
-
-            <div className="rounded-xl border border-zinc-800 bg-[#282A35] p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-bold">
-                    Email Verification
-                  </h3>
-
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Your email verification status.
-                  </p>
-                </div>
-
-                <span
-                  className={`text-xs font-bold ${
-                    user.isEmailVerified
-                      ? "text-[#04AA6D]"
-                      : "text-red-400"
-                  }`}
-                >
-                  {user.isEmailVerified
-                    ? "Verified"
-                    : "Not verified"}
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-zinc-800 bg-[#282A35] p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-bold">
-                    Two-Step Verification
-                  </h3>
-
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Additional protection for your account.
-                  </p>
-                </div>
-
-                <span
-                  className={`text-xs font-bold ${
-                    user.twoStepVerification
-                      ? "text-[#04AA6D]"
-                      : "text-zinc-500"
-                  }`}
-                >
-                  {user.twoStepVerification
-                    ? "Enabled"
-                    : "Disabled"}
-                </span>
-              </div>
-            </div>
-
+          <div className="flex items-center justify-between py-4 text-sm">
+            <span className="text-zinc-400">Two-Step Verification</span>
+            <span
+              className={`font-semibold ${
+                user.twoStepVerification ? "text-[#00FF87]" : "text-zinc-500"
+              }`}
+            >
+              {user.twoStepVerification ? "Active" : "Disabled"}
+            </span>
           </div>
 
-          <div className="mt-5 border-t border-zinc-800 pt-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold">
-                  Activity Visibility
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-600">
-                  Control who can see your activity.
-                </p>
-              </div>
-
-              <span className="rounded-full border border-zinc-700 bg-[#282A35] px-4 py-2 text-xs font-semibold capitalize text-zinc-400">
-                {user.activityVisibility}
-              </span>
-            </div>
+          <div className="flex items-center justify-between py-4 text-sm">
+            <span className="text-zinc-400">Member Since</span>
+            <span className="font-medium text-zinc-300">
+              {formatDate(user.createdAt)}
+            </span>
           </div>
-        </section>
 
+          <div className="flex items-center justify-between py-4 text-sm">
+            <span className="text-zinc-400">Last Active</span>
+            <span className="font-medium text-zinc-300">
+              {formatDate(user.lastActiveAt)}
+            </span>
+          </div>
+        </div>
+
+        {/* Restricted Notification */}
         {user.isBanned && (
-          <section className="mt-5 rounded-2xl border border-red-900/50 bg-red-950/20 p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-400">
-              Account Status
+          <div className="rounded-2xl border border-red-900/60 bg-red-950/30 p-5 text-center">
+            <p className="text-sm font-bold text-red-400">Account Restricted</p>
+            <p className="mt-1 text-xs text-red-400/80">
+              Your account currently has active restrictions.
             </p>
-
-            <h2 className="mt-2 text-xl font-bold text-red-300">
-              Account Restricted
-            </h2>
-
-            <p className="mt-3 text-sm leading-6 text-red-400/80">
-              Your account currently has restrictions applied to it.
-            </p>
-          </section>
+          </div>
         )}
-
       </main>
+
+      {/* Edit Profile Modal Dialog */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/85 backdrop-blur-md sm:items-center sm:p-4">
+          <div className="w-full max-w-lg rounded-t-3xl border border-zinc-800 bg-[#0d0d10] p-6 shadow-2xl sm:rounded-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+              <h2 className="text-lg font-black text-white">Edit Profile</h2>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-900 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="mt-5 space-y-4">
+              {/* Change Avatar Row inside modal */}
+              <div className="flex items-center gap-4 rounded-xl border border-zinc-800/80 bg-black/60 p-3">
+                <img
+                  src={
+                    avatarPreview ||
+                    formData.profilePicture ||
+                    "https://res.cloudinary.com/dlzi244at/image/upload/v1763367677/defaultPersonImage_exseqc.avif"
+                  }
+                  alt="Preview"
+                  className="h-14 w-14 rounded-xl border border-zinc-700 object-cover"
+                />
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
+                  >
+                    Upload New Image
+                  </button>
+                  <p className="mt-1 text-[11px] text-zinc-500">PNG, JPG, or WEBP up to 5MB</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-[#00FF87]"
+                  placeholder="Your Name"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  GitHub Username
+                </label>
+                <input
+                  type="text"
+                  value={formData.githubUsername}
+                  onChange={(e) =>
+                    setFormData({ ...formData, githubUsername: e.target.value })
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-[#00FF87]"
+                  placeholder="e.g. torvalds"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  Bio
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.bio}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-[#00FF87]"
+                  placeholder="Tell the community about what you code..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#00FF87] to-[#60EFFF] py-2.5 text-sm font-bold text-black shadow-lg shadow-[#00FF87]/20 transition hover:opacity-90 active:scale-95"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

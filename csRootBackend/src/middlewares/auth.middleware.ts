@@ -6,6 +6,7 @@ import refreshAccessToken from "../utils/refreshAccessToken";
 
 export interface AuthenticatedRequest extends Request {
     user?: any;
+    file?: any
 }
 
 const verifyJWT = async (
