@@ -33,6 +33,15 @@ app.use(express.urlencoded({
 app.get("/", (req, res) => {
     res.send("CS Root is Active");
 });
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: "OK",
+        message: "CS ROOT backend is running",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
 
 //Routing
 import userRoutes from "./routes/user.route"
