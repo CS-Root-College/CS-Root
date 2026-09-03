@@ -17,6 +17,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-easy-crop": "^6.2.3",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.18.2",
     "tailwindcss": "^4.3.3"
   },

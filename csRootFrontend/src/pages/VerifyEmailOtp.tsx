@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
 import { useAuth } from "../context/AuthContext";
-
-const api = import.meta.env.VITE_PUBLIC_BACKEND;
+import api from "../utils/axios";
 
 export function VerifyEmailOtp() {
   const navigate = useNavigate();
@@ -56,8 +55,8 @@ export function VerifyEmailOtp() {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        `${api}/users/verify-email`,
+      const response = await api.post(
+        `/users/verify-email`,
         {
           email: email.trim(),
           otp: otp.trim(),

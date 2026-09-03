@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-
-const api = import.meta.env.VITE_PUBLIC_BACKEND;
+import api from "../utils/axios";
 
 export function Login() {
   const navigate = useNavigate();
@@ -66,8 +65,8 @@ export function Login() {
 
       const isEmail = identifier.includes("@");
 
-      await axios.post(
-        `${api}/users/login`,
+      await api.post(
+        `/users/login`,
         {
           ...(isEmail
             ? {

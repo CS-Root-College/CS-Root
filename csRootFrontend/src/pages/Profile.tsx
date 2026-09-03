@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Cropper from "react-easy-crop";
 import { useAuth } from "../context/AuthContext";
+import api from "../utils/axios";
+import toast from "react-hot-toast";
 
 function formatDate(dateString?: string | Date | null) {
   if (!dateString) return "N/A";
@@ -202,89 +204,64 @@ export function Profile() {
   };
 
   const uploadCroppedImage = async () => {
-    if (!selectedImage || !croppedAreaPixels || !user) {
-      return;
-    }
+  if (!selectedImage || !croppedAreaPixels || !user) {
+    return;
+  }
 
-    try {
-      setIsUploadingPicture(true);
+  try {
+    setIsUploadingPicture(true);
 
-      const croppedBlob = await getCroppedImage(
-        selectedImage,
-        croppedAreaPixels
-      );
+    const croppedBlob = await getCroppedImage(
+      selectedImage,
+      croppedAreaPixels
+    );
 
-      const file = new File(
-        [croppedBlob],
-        "profile-picture.jpg",
-        {
-          type: "image/jpeg",
-        }
-      );
-
-      const imageFormData = new FormData();
-
-      imageFormData.append(
-        "profilePicture",
-        file
-      );
-
-      const response = await axios.patch(
-        `${BACKEND_URL}/users/update-profile-picture`,
-        imageFormData,
-        {
-          withCredentials: true,
-        }
-      );
-
-      const updatedPicture =
-        response.data?.data?.profilePicture ||
-        response.data?.profilePicture;
-
-      if (updatedPicture) {
-        setSelectedImage(null);
-
-        if (selectedImage) {
-          URL.revokeObjectURL(selectedImage);
-        }
-
-        setCrop({
-          x: 0,
-          y: 0,
-        });
-
-        setZoom(1);
-        setCroppedAreaPixels(null);
-
-        window.location.reload();
-      } else {
-        window.location.reload();
+    const file = new File(
+      [croppedBlob],
+      "profile-picture.jpg",
+      {
+        type: "image/jpeg",
       }
-    } catch (error) {
-      console.error(
-        "Profile picture upload failed:",
-        error
-      );
+    );
 
-      if (axios.isAxiosError(error)) {
-        console.error(
-          "Backend response:",
-          error.response?.data
-        );
+    const imageFormData = new FormData();
 
-        alert(
-          error.response?.data?.message ||
-            "Failed to update profile picture."
-        );
-      } else {
-        alert(
-          "Something went wrong while uploading the image."
-        );
-      }
-    } finally {
-      setIsUploadingPicture(false);
-    }
-  };
+    imageFormData.append(
+      "profilePicture",
+      file
+    );
+
+    await api.patch(
+      "/users/update-profile-picture",
+      imageFormData
+    );
+
+    URL.revokeObjectURL(selectedImage);
+
+    setSelectedImage(null);
+
+    setCrop({
+      x: 0,
+      y: 0,
+    });
+
+    setZoom(1);
+
+    setCroppedAreaPixels(null);
+
+    window.location.reload();
+
+    toast.success("Profile picture updated successfully");
+
+  } catch (error) {
+    console.error(
+      "Profile picture upload failed:",
+      error
+    );
+  } finally {
+    setIsUploadingPicture(false);
+  }
+};
 
   const handleSaveDetails = async (
     e: React.FormEvent

@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-
-const api = import.meta.env.VITE_PUBLIC_BACKEND;
+import api from "../utils/axios";
 
 export function CreateAccount() {
   const navigate = useNavigate();
@@ -39,8 +38,8 @@ export function CreateAccount() {
     try {
       setLoading(true);
 
-      await axios.post(
-        `${api}/users/register-email`,
+      await api.post(
+        `/users/register-email`,
         {
           username: username.trim(),
           email: email.trim(),
