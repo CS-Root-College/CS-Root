@@ -48,8 +48,6 @@ docker-compose.override.yml
 
 *.tgz
 
-uploads/
-public/uploads/
 
 prisma/dev.db
 prisma/dev.db-journal
