@@ -8,13 +8,13 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (response) => {
-    const message =
-      response.data?.message ||
-      response.data?.data?.message;
+    // const message =
+    //   response.data?.message ||
+    //   response.data?.data?.message;
 
-    if (message) {
-      toast.success(message);
-    }
+    // if (message) {
+    //   toast.success(message);
+    // }
 
     return response;
   },

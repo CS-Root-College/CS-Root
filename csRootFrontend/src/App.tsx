@@ -8,6 +8,8 @@ import { VerifyEmailOtp } from "./pages/VerifyEmailOtp";
 import { Home } from "./pages/Home";
 import { Compiler } from "./pages/Compiler";
 import { Profile } from "./pages/Profile";
+import DSAProblem from "./pages/DsaProblem";
+import DSAProblems from "./pages/AllDsaProblems";
 
 function NotFound() {
   return (
@@ -37,6 +39,8 @@ function App() {
             {/* Authentication */}
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/practice/dsa/:slug" element={<DSAProblem />} />
+            <Route path="/practice/dsa" element={<DSAProblems />} />
 
             <Route path="/register" element={<CreateAccount />} />
 

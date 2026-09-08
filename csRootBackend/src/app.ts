@@ -47,10 +47,12 @@ app.get("/health", (req, res) => {
 import userRoutes from "./routes/user.route"
 import githubRoutes from "./routes/github.route"
 import compilerRoutes from "./routes/compiler.route";
+import dsaRoutes from "./routes/dsa.route";
 
 app.use("/api/v1/users",userRoutes)
 app.use("/api/v1/oauth",githubRoutes)
 app.use("/api/v1/compiler",compilerRoutes)
+app.use("/api/v1/problems",dsaRoutes)
 
 import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
