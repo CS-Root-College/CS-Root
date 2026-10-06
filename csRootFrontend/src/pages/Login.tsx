@@ -103,7 +103,7 @@ export function Login() {
 
   const handleGithubLogin = () => {
     window.location.href =
-      `${api}/oauth/github-login`;
+      `${import.meta.env.VITE_PUBLIC_BACKEND}/oauth/github-login`;
   };
 
   return (
