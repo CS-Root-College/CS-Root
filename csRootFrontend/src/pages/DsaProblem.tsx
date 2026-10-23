@@ -20,6 +20,9 @@ import {
   Terminal,
   Timer,
   Zap,
+  X,
+  AlertCircle,
+  TrendingUp,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../utils/axios";
@@ -65,6 +68,23 @@ type Language = {
   monacoLang: string;
 };
 
+type SubmissionResult = {
+  submissionId: string;
+  status: string;
+  verdict: boolean;
+  testsPassed: number;
+  totalTests: number;
+  executionTime: number;
+  memoryUsed: number;
+  failedTestCase?: {
+    input: string;
+    expected: string;
+    actual: string;
+  };
+  pointsAwarded: number;
+  xpAwarded: number;
+};
+
 type CompilerResult = {
   stdout: string | null;
   stderr: string | null;
@@ -93,6 +113,218 @@ const formatTime = (seconds: number) => {
   const secs = seconds % 60;
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "accepted":
+      return "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
+    case "wrong_answer":
+      return "bg-rose-500/10 border-rose-500/30 text-rose-300";
+    case "compilation_error":
+    case "runtime_error":
+      return "bg-orange-500/10 border-orange-500/30 text-orange-300";
+    case "time_limit_exceeded":
+      return "bg-amber-500/10 border-amber-500/30 text-amber-300";
+    case "memory_limit_exceeded":
+      return "bg-cyan-500/10 border-cyan-500/30 text-cyan-300";
+    default:
+      return "bg-zinc-500/10 border-zinc-500/30 text-zinc-300";
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case "accepted":
+      return "Accepted";
+    case "wrong_answer":
+      return "Wrong Answer";
+    case "compilation_error":
+      return "Compilation Error";
+    case "runtime_error":
+      return "Runtime Error";
+    case "time_limit_exceeded":
+      return "Time Limit Exceeded";
+    case "memory_limit_exceeded":
+      return "Memory Limit Exceeded";
+    default:
+      return "Unknown";
+  }
+};
+
+function SubmissionResultModal({
+  result,
+  problem,
+  isOpen,
+  onClose,
+}: {
+  result: SubmissionResult | null;
+  problem: Problem | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  if (!isOpen || !result || !problem) return null;
+
+  const isAccepted = result.verdict;
+  const statusColor = getStatusColor(result.status);
+  const statusLabel = getStatusLabel(result.status);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-2xl overflow-hidden">
+        <div
+          className={`absolute inset-x-0 top-0 h-1 ${
+            isAccepted ? "bg-emerald-500" : "bg-rose-500"
+          }`}
+        />
+
+        <div className="p-6 sm:p-8">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <div
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold mb-3 ${statusColor}`}
+              >
+                {isAccepted ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
+                {statusLabel}
+              </div>
+              <h2 className="text-xl font-bold text-white">
+                {problem.title}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-zinc-400 transition hover:bg-white/[0.08] hover:text-white"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block mb-1">
+                  Status
+                </span>
+                <span
+                  className={`text-sm font-bold ${
+                    isAccepted ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
+                  {result.testsPassed}/{result.totalTests}
+                </span>
+              </div>
+
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block mb-1">
+                  Time
+                </span>
+                <span className="text-sm font-mono font-bold text-zinc-300">
+                  {result.executionTime}ms
+                </span>
+              </div>
+
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block mb-1">
+                  Memory
+                </span>
+                <span className="text-sm font-mono font-bold text-zinc-300">
+                  {result.memoryUsed}MB
+                </span>
+              </div>
+
+              {isAccepted && result.pointsAwarded > 0 && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+                  <span className="text-[11px] font-medium text-amber-600 uppercase tracking-wider block mb-1">
+                    Bonus
+                  </span>
+                  <span className="text-sm font-bold text-amber-400">
+                    +{result.pointsAwarded} pts
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {result.pointsAwarded > 0 && isAccepted && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
+                    <TrendingUp size={18} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-emerald-300">
+                      First Accepted!
+                    </div>
+                    <div className="text-xs text-emerald-300/70">
+                      +{result.pointsAwarded} points, +{result.xpAwarded} XP
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {result.failedTestCase && !isAccepted && (
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 space-y-3">
+                <div className="text-sm font-semibold text-rose-300">
+                  Failed Test Case
+                </div>
+                <div className="space-y-2 font-mono text-xs">
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-950/30 p-2.5">
+                    <span className="text-[10px] text-rose-600/80 uppercase font-semibold block mb-1">
+                      Input
+                    </span>
+                    <span className="text-rose-200 break-all">
+                      {result.failedTestCase.input}
+                    </span>
+                  </div>
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-950/30 p-2.5">
+                    <span className="text-[10px] text-rose-600/80 uppercase font-semibold block mb-1">
+                      Expected
+                    </span>
+                    <span className="text-emerald-300 break-all">
+                      {result.failedTestCase.expected}
+                    </span>
+                  </div>
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-950/30 p-2.5">
+                    <span className="text-[10px] text-rose-600/80 uppercase font-semibold block mb-1">
+                      Actual
+                    </span>
+                    <span className="text-rose-300 break-all">
+                      {result.failedTestCase.actual}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-white/[0.08]"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                window.location.href = `/submissions/${problem.slug}`;
+              }}
+              className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
+            >
+              View All Submissions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DSAProblem() {
   const { slug } = useParams<{ slug: string }>();
@@ -123,6 +355,9 @@ export default function DSAProblem() {
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [fontSize, setFontSize] = useState(13);
+
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const editorPaneRef = useRef<HTMLDivElement | null>(null);
@@ -273,31 +508,28 @@ export default function DSAProblem() {
     setMobileTab("console");
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_PUBLIC_BACKEND}/problems/submit/${problem.slug}`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ language, code }),
-        }
+      const response = await api.post(
+        `/problems/submit-dsa-problem/${problem._id}`,
+        { language, code },
+        { withCredentials: true }
       );
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.message || "Submission failed.");
-      }
+      const data = response.data;
+      const result: SubmissionResult = {
+        submissionId: data?.data?.submissionId || "",
+        status: data?.data?.status || "unknown",
+        verdict: data?.data?.verdict || false,
+        testsPassed: data?.data?.testsPassed || 0,
+        totalTests: data?.data?.totalTests || 0,
+        executionTime: data?.data?.executionTime || 0,
+        memoryUsed: data?.data?.memoryUsed || 0,
+        failedTestCase: data?.data?.failedTestCase,
+        pointsAwarded: data?.data?.pointsAwarded || 0,
+        xpAwarded: data?.data?.xpAwarded || 0,
+      };
 
-      setCompilerResult(
-        data?.data?.result ?? data?.result ?? {
-          stdout: data?.message ?? "Solved successfully.",
-          stderr: null,
-          compile_output: null,
-          message: null,
-          time: null,
-          memory: null,
-        }
-      );
+      setSubmissionResult(result);
+      setShowSubmissionModal(true);
     } catch (error) {
       setCompilerResult({
         stdout: null,
@@ -405,6 +637,13 @@ export default function DSAProblem() {
         isFullscreen ? "p-0" : ""
       }`}
     >
+      <SubmissionResultModal
+        result={submissionResult}
+        problem={problem}
+        isOpen={showSubmissionModal}
+        onClose={() => setShowSubmissionModal(false)}
+      />
+
       <div
         className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_right,#ffffff04_1px,transparent_1px),linear-gradient(to_bottom,#ffffff04_1px,transparent_1px)] bg-[size:3rem_3rem]"
         style={{
@@ -560,7 +799,6 @@ export default function DSAProblem() {
 
       {/* Main Workspace Area */}
       <main className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
-        
         {/* Left Pane: Problem Description */}
         <section
           style={{ width: `${leftWidth}%` }}
@@ -965,7 +1203,6 @@ export default function DSAProblem() {
         </section>
       </main>
 
-      {/* Desktop Minimal Footer Bar */}
       <footer className="hidden h-7 shrink-0 items-center justify-between border-t border-white/[0.06] bg-zinc-950/80 px-4 text-[11px] text-zinc-500 sm:flex">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
