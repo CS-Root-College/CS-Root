@@ -142,84 +142,84 @@ const createDSAProblem = async (req: AuthenticatedRequest, res: Response) => {
 
 }
 
-const updateProblem = async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user._id;
-    const { problemId } = req.params
+// const updateProblem = async (req: AuthenticatedRequest, res: Response) => {
+//     const userId = req.user._id;
+//     const { problemId } = req.params
 
-    const {
-        title,
-        problemStatement,
-        description,
-        constraints,
-        examples,
-        tags,
-        timeLimit,
-        memoryLimit
-    } = req.body;
+//     const {
+//         title,
+//         problemStatement,
+//         description,
+//         constraints,
+//         examples,
+//         tags,
+//         timeLimit,
+//         memoryLimit
+//     } = req.body;
 
-    if (!problemId) {
-        throw new apiError(400, "Problem id is required")
-    }
+//     if (!problemId) {
+//         throw new apiError(400, "Problem id is required")
+//     }
 
-    dsaValidation.title.parse(title);
-    dsaValidation.problemStatement.parse(problemStatement);
-    dsaValidation.description.parse(description);
-    dsaValidation.constraints.parse(constraints);
-    dsaValidation.examples.parse(examples);
-    dsaValidation.tags.parse(tags);
-    dsaValidation.timeLimit.parse(timeLimit);
-    dsaValidation.memoryLimit.parse(memoryLimit);
+//     dsaValidation.title.parse(title);
+//     dsaValidation.problemStatement.parse(problemStatement);
+//     dsaValidation.description.parse(description);
+//     dsaValidation.constraints.parse(constraints);
+//     dsaValidation.examples.parse(examples);
+//     dsaValidation.tags.parse(tags);
+//     dsaValidation.timeLimit.parse(timeLimit);
+//     dsaValidation.memoryLimit.parse(memoryLimit);
 
-    const existingProblem = await Problem.findOne({
-        title,
-        _id: { $ne: problemId }
-    });
+//     const existingProblem = await Problem.findOne({
+//         title,
+//         _id: { $ne: problemId }
+//     });
 
-    if (existingProblem) {
-        throw new apiError(
-            409,
-            "A problem with this title already exists"
-        );
-    }
+//     if (existingProblem) {
+//         throw new apiError(
+//             409,
+//             "A problem with this title already exists"
+//         );
+//     }
 
-    const problem = await Problem.findById(problemId)
+//     const problem = await Problem.findById(problemId)
 
-    if (!problem) {
-        throw new apiError(404, "Problem not found")
-    }
-    if (!problem.createdBy.equals(userId) && req.user.role !== "admin") {
-        throw new apiError(403, "You are not the creator. You can't update the problem details.")
-    }
+//     if (!problem) {
+//         throw new apiError(404, "Problem not found")
+//     }
+//     if (!problem.createdBy.equals(userId) && req.user.role !== "admin") {
+//         throw new apiError(403, "You are not the creator. You can't update the problem details.")
+//     }
 
-    const slug = slugify(title, {
-        lower: true,
-        strict: true,
-        trim: true,
-    });
+//     const slug = slugify(title, {
+//         lower: true,
+//         strict: true,
+//         trim: true,
+//     });
 
-    // Update
+//     // Update
 
-    problem.title = title;
-    problem.slug = slug;
+//     problem.title = title;
+//     problem.slug = slug;
 
-    problem.problemStatement = problemStatement;
-    problem.description = description;
+//     problem.problemStatement = problemStatement;
+//     problem.description = description;
 
-    problem.constraints = constraints;
-    problem.examples = examples;
+//     problem.constraints = constraints;
+//     problem.examples = examples;
 
-    problem.tags = tags;
+//     problem.tags = tags;
 
-    problem.timeLimit = timeLimit;
-    problem.memoryLimit = memoryLimit;
+//     problem.timeLimit = timeLimit;
+//     problem.memoryLimit = memoryLimit;
 
-    await problem.save()
+//     await problem.save()
 
-    return res.status(200).json(
-        new apiResponse(200, "Problem updated successfully")
-    )
+//     return res.status(200).json(
+//         new apiResponse(200, "Problem updated successfully")
+//     )
 
-}
+// }
 
 const getDSAProblem = async (
     req: Request,

@@ -9,7 +9,7 @@ if (!JUDGE0_URL) {
     throw new Error("JUDGE0_URL is not configured");
 }
 
-interface Judge0Response {
+export interface Judge0Response {
     stdout: string | null;
     stderr: string | null;
     compile_output: string | null;
