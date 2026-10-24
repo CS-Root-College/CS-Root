@@ -515,10 +515,42 @@ const getAcceptedSubmissions = async (
     );
 };
 
+const getAllDsaSubmissions = async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user._id;
+    const { page = 1 } = req.query;
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    const submissions = await Submission.find({ userId })
+        .select(
+            "problemId language status verdict executionTime memoryUsed testsPassed totalTests createdAt"
+        )
+        .populate("problemId", "title slug difficulty")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+    const total = await Submission.countDocuments({ userId });
+
+    return res.status(200).json(
+        new apiResponse(200, "All submissions fetched successfully", {
+            submissions,
+            pagination: {
+                current: pageNum,
+                total: Math.ceil(total / limitNum),
+                count: submissions.length,
+            },
+        })
+    );
+};
+
 export {
     submitCode,
     getSubmissions,
     getSubmissionDetails,
     getUserStats,
     getAcceptedSubmissions,
+    getAllDsaSubmissions
 };

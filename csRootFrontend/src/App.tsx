@@ -10,6 +10,7 @@ import { Compiler } from "./pages/Compiler";
 import { Profile } from "./pages/Profile";
 import DSAProblem from "./pages/DsaProblem";
 import DSAProblems from "./pages/AllDsaProblems";
+import AllSubmissionsPage from "./pages/Submissions";
 
 function NotFound() {
   return (
@@ -45,6 +46,8 @@ function App() {
             <Route path="/register" element={<CreateAccount />} />
 
             <Route path="/verify-email-otp" element={<VerifyEmailOtp />} />
+
+            <Route path="/submissions" element={<AllSubmissionsPage />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
