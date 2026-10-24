@@ -387,6 +387,7 @@ export default function AllSubmissionsPage() {
     const fetchSubmissions = async () => {
       setIsLoading(true);
       setError("");
+      loadingDetail;
 
       try {
         const response = await api.get(
