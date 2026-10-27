@@ -11,6 +11,12 @@ import generateAccessAndRefreshTokens from "../utils/jwt";
 import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
 import { sendTwoStepVerification } from "../service/twoStepVerification";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
+<<<<<<< Updated upstream
+=======
+import cloudinary from "../config/cloudinary";
+import uploadProfilePicture from "../service/uploadProfilePicture";
+import { randomBytes, createHash } from "node:crypto";
+>>>>>>> Stashed changes
 
 const registerEmail = async (req: Request, res: Response) => {
     const { email, username, password } = req.body;
@@ -429,7 +435,151 @@ const logout = async (
     );
 };
 
+
+const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  userValidation.email.parse(email);
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+
+  // Use the same response whether or not the account exists.
+  if (!user || !user.password) {
+    return res.status(200).json(
+      new apiResponse(
+        200,
+        "If an eligible account exists, a reset OTP will be sent.",
+      ),
+    );
+  }
+
+  const otp = randomBytes(4).readUInt32BE(0) % 900000;
+  const resetOtp = String(100000 + otp);
+
+  const otpKey = `passwordResetOtp:${normalizedEmail}`;
+  const attemptsKey = `passwordResetAttempts:${normalizedEmail}`;
+  const tokenKey = `passwordResetToken:${normalizedEmail}`;
+
+  await redis.del(otpKey, attemptsKey, tokenKey);
+  await redis.set(otpKey, resetOtp, "EX", 600);
+
+  try {
+    await sendEmail({
+      email: normalizedEmail,
+      subject: "Reset Your CS Root Password",
+      layout: verifyEmailLayout(user.username, resetOtp),
+    });
+  } catch (error) {
+    await redis.del(otpKey);
+    throw error;
+  }
+
+  return res.status(200).json(
+    new apiResponse(
+      200,
+      "If an eligible account exists, a reset OTP will be sent.",
+    ),
+  );
+};
+
+const verifyResetOTP = async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+
+  userValidation.email.parse(email);
+
+  if (typeof otp !== "string" || !/^\d{6}$/.test(otp)) {
+    throw new apiError(400, "Please provide a valid six-digit OTP");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpKey = `passwordResetOtp:${normalizedEmail}`;
+  const attemptsKey = `passwordResetAttempts:${normalizedEmail}`;
+  const tokenKey = `passwordResetToken:${normalizedEmail}`;
+
+  const attempts = Number(await redis.get(attemptsKey) || "0");
+
+  if (attempts >= 5) {
+    await redis.del(otpKey);
+    throw new apiError(429, "Too many attempts. Request a new OTP.");
+  }
+
+  const storedOtp = await redis.get(otpKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    const count = await redis.incr(attemptsKey);
+
+    if (count === 1) {
+      await redis.expire(attemptsKey, 600);
+    }
+
+    if (count >= 5) {
+      await redis.del(otpKey);
+    }
+
+    throw new apiError(400, "Invalid or expired OTP");
+  }
+
+  const resetToken = randomBytes(32).toString("hex");
+  const hashedToken = createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  await redis.set(tokenKey, hashedToken, "EX", 600);
+  await redis.del(otpKey, attemptsKey);
+
+  return res.status(200).json(
+    new apiResponse(200, "OTP verified successfully", {
+      resetToken,
+    }),
+  );
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  const { email, resetToken, newPassword } = req.body;
+
+  userValidation.email.parse(email);
+  userValidation.password.parse(newPassword);
+
+  if (
+    typeof resetToken !== "string" ||
+    !/^[a-f0-9]{64}$/.test(resetToken)
+  ) {
+    throw new apiError(400, "Invalid or expired reset token");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const tokenKey = `passwordResetToken:${normalizedEmail}`;
+
+  const storedHash = await redis.get(tokenKey);
+  const suppliedHash = createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  if (!storedHash || storedHash !== suppliedHash) {
+    throw new apiError(400, "Invalid or expired reset token");
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user || !user.password) {
+    throw new apiError(400, "Unable to reset password");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  // Delete the token so it cannot be reused.
+  await redis.del(tokenKey);
+
+  return res.status(200).json(
+    new apiResponse(200, "Password reset successfully"),
+  );
+};
+
+
 export {
+<<<<<<< Updated upstream
     registerEmail,
     verifyEmail,
     login,
@@ -438,3 +588,16 @@ export {
     logout
 
 };
+=======
+  registerEmail,
+  verifyEmail,
+  login,
+  verifyTwoStepVerification,
+  getCurrentUser,
+  logout,
+  changeProfilePicture,
+  forgotPassword,
+ verifyResetOTP,
+ resetPassword,
+};
+>>>>>>> Stashed changes

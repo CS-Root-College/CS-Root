@@ -1,4 +1,5 @@
 import sendEmailClient from "saifstack-email";
+import nodemailer from "nodemailer";
 
 interface SendEmailOptions {
   email: string;

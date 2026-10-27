@@ -13,6 +13,12 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+<<<<<<< Updated upstream
+=======
+    "@types/multer": "^2.2.0",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.15",
+>>>>>>> Stashed changes
     "typescript": "^7.0.2"
   },
   "dependencies": {
@@ -34,7 +40,14 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.1",
+<<<<<<< Updated upstream
     "saifstack-email": "^1.0.0",
+=======
+    "multer": "^2.3.0",
+    "nodemailer": "^10.2.1",
+    "saifstack-email": "^1.0.0",
+    "slugify": "^1.6.9",
+>>>>>>> Stashed changes
     "zod": "^4.4.3"
   }
 }
