@@ -34,6 +34,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.1",
     "multer": "^2.3.0",
+    "rate-limiter-flexible": "^11.2.3",
     "saifstack-email": "^1.0.0",
     "slugify": "^1.6.9",
     "tsx": "^4.23.1",

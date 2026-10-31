@@ -6,7 +6,8 @@ import apiError from "./apiError";
 
 const refreshAccessToken = async (
     refreshToken: string,
-    res: Response
+    res: Response,
+    platform: "app" | "website" = "website"
 ) => {
 
     const decoded = jwt.verify(
@@ -52,21 +53,24 @@ const refreshAccessToken = async (
         }
     );
 
-    res.cookie(
-        "accessToken",
-        accessToken,
-        {
-            httpOnly: true,
-            secure:
-                process.env.NODE_ENV ===
-                "production",
-            sameSite:
-                process.env.NODE_ENV === "production"
-                    ? "none"
-                    : "lax",
-            maxAge: 15 * 60 * 1000,
-        }
-    );
+    if (platform !== "app") {
+        res.cookie(
+            "accessToken",
+            accessToken,
+            {
+                httpOnly: true,
+                secure:
+                    process.env.NODE_ENV === "production",
+                sameSite:
+                    process.env.NODE_ENV === "production"
+                        ? "none"
+                        : "lax",
+                maxAge: 15 * 60 * 1000,
+            }
+        );
+    } else {
+        res.setHeader("x-access-token", accessToken);
+    }
 
     return await User.findById(
         user._id

@@ -93,7 +93,7 @@ const registerEmail = async (req: Request, res: Response) => {
 };
 
 const verifyEmail = async (req: Request, res: Response) => {
-  const { email, otp } = req.body;
+  const { email, otp, platform } = req.body;
 
   const storedOtp = await redis.get(`otp:${email}`);
 
@@ -153,29 +153,43 @@ const verifyEmail = async (req: Request, res: Response) => {
     console.error("Failed to send welcome email:", error);
   }
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
-    })
-    .cookie("refreshToken", refreshToken, {
-      ...cookieOptions,
-      maxAge: 14 * 24 * 60 * 60 * 1000,
-    })
-    .json(
+  if (platform != "app") {
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "Welcome! User registered successfully.", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
       new apiResponse(200, "Welcome! User registered successfully.", {
         user: {
           _id: user._id,
           email: user.email,
           username: user.username,
         },
+        accessToken,
+        refreshToken,
       }),
     );
+  }
 };
 
 const login = async (req: Request, res: Response) => {
-  const { email, password, username } = req.body;
+  const { email, password, username, platform } = req.body;
 
   if (!email && !username) {
     throw new apiError(404, "Please provide email or username");
@@ -222,42 +236,49 @@ const login = async (req: Request, res: Response) => {
     user._id,
   );
 
-  // const cookieOptions = {
-  //     httpOnly: true,
-  //     secure: process.env.NODE_ENV === "production",
-  //     sameSite: "lax",
-  //     path: "/",
-  // } as const;
-
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   } as const;
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
-    })
-    .cookie("refreshToken", refreshToken, {
-      ...cookieOptions,
-      maxAge: 14 * 24 * 60 * 60 * 1000,
-    })
-    .json(
+  if (platform != "app") {
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "User logged in successfully", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
       new apiResponse(200, "User logged in successfully", {
         user: {
           _id: user._id,
           email: user.email,
           username: user.username,
         },
+        accessToken,
+        refreshToken,
       }),
     );
+  }
 };
 
 const verifyTwoStepVerification = async (req: Request, res: Response) => {
-  const { email, username, code } = req.body;
+  const { email, username, code, platform } = req.body;
 
   if (!email && !username) {
     throw new apiError(400, "Please provide either email or username");
@@ -304,25 +325,39 @@ const verifyTwoStepVerification = async (req: Request, res: Response) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   } as const;
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
-    })
-    .cookie("refreshToken", refreshToken, {
-      ...cookieOptions,
-      maxAge: 14 * 24 * 60 * 60 * 1000,
-    })
-    .json(
+  if (platform != "app") {
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "User logged in successfully", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
       new apiResponse(200, "User logged in successfully", {
         user: {
           _id: user._id,
           email: user.email,
           username: user.username,
         },
+        accessToken,
+        refreshToken,
       }),
     );
+  }
 };
 
 const getCurrentUser = async (req: AuthenticatedRequest, res: Response) => {
