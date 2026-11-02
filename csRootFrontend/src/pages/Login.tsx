@@ -175,7 +175,14 @@ export function Login() {
                 disabled={loading}
                 className="w-full rounded-lg border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 transition focus:border-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
               />
-
+                <div className="mt-2 text-right">
+                  <Link
+                    to="/forgetpassword"
+                    className="text-sm text-zinc-400 transition hover:text-white hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
             </div>
 
             {error && (

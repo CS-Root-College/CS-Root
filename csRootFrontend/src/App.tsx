@@ -12,6 +12,8 @@ import { Profile } from "./pages/Profile";
 import DSAProblem from "./pages/DsaProblem";
 import DSAProblems from "./pages/AllDsaProblems";
 import AllSubmissionsPage from "./pages/Submissions";
+import { ForgetPassword } from "./pages/ForgetPassword";
+import { ResetPassword } from "./pages/ResetPassword";
 
 function NotFound() {
   return (
@@ -49,6 +51,9 @@ function App() {
             <Route path="/verify-email-otp" element={<VerifyEmailOtp />} />
 
             <Route path="/submissions" element={<AllSubmissionsPage />} />
+
+            <Route path="/forgetpassword" element={<ForgetPassword />} />
+            <Route path="/resetpassword" element={<ResetPassword />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />

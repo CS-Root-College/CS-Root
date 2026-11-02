@@ -7,12 +7,14 @@ import sendEmail from "../service/sendEmail.js";
 import { userValidation } from "../validation/user.validation";
 import redis from "../config/redis";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import generateAccessAndRefreshTokens from "../utils/jwt";
 import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
 import { sendTwoStepVerification } from "../service/twoStepVerification";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import cloudinary from "../config/cloudinary";
 import uploadProfilePicture from "../service/uploadProfilePicture";
+import { forgotPasswordEmailLayout } from "../emailLayouts/forgotPasswordEmail";
 
 const registerEmail = async (req: Request, res: Response) => {
   const { email, username, password } = req.body;
@@ -433,6 +435,133 @@ const changeProfilePicture = async (
     );
 };
 
+const forgotPassword = async (req: Request, res: Response) => {
+  const { identifier } = req.body;
+
+  if (!identifier || typeof identifier !== "string") {
+    throw new apiError(400, "Email or username is required");
+  }
+
+  const value = identifier.trim().toLowerCase();
+
+  const user = await User.findOne({
+    $or: [
+      { email: value },
+      { username: value },
+    ],
+  });
+
+  if (!user) {
+    throw new apiError(404, "No account found with this email or username");
+  }
+
+  if (user.authProvider !== "email") {
+    throw new apiError(
+      400,
+      "This account uses GitHub authentication. Please login using GitHub."
+    );
+  }
+
+  if (!user.email) {
+    throw new apiError(400, "No email is associated with this account.");
+  }
+
+  const emailHash = crypto
+    .createHash("sha256")
+    .update(user.email.toLowerCase())
+    .digest("hex");
+
+  const cooldownKey = `passwordResetCooldown:${emailHash}`;
+
+  const cooldown = await redis.set(
+    cooldownKey,
+    "1",
+    "EX",
+    60,
+    "NX"
+  );
+
+  if (!cooldown) {
+    throw new apiError(
+      429,
+      "Please wait before requesting another reset link."
+    );
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  const resetKey = `passwordReset:${hashedToken}`;
+
+  try {
+    await redis.set(resetKey, user._id.toString(), "EX", 900);
+
+    const webUrl = process.env.WEB_URL!.replace(/\/$/, "");
+
+    const resetLink = `${webUrl}/resetpassword?token=${resetToken}`;
+
+    await sendEmail({
+      email: user.email,
+      subject: "Reset Your CS Root Password",
+      layout: forgotPasswordEmailLayout(user.username, resetLink),
+    });
+  } catch (error) {
+    await redis.del(resetKey, cooldownKey);
+    throw error;
+  }
+
+  return res.status(200).json(
+    new apiResponse(200, "Password reset link sent successfully.")
+  );
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  if (!token || typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  userValidation.password.parse(password);
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const resetKey = `passwordReset:${hashedToken}`;
+
+  const userId = await redis.getdel(resetKey);
+
+  if (!userId) {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user || user.authProvider !== "email") {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  user.set("refreshToken", undefined);
+
+  await user.save();
+
+  await redis.del(`refreshToken:${user._id}`);
+
+  return res.status(200).json(
+    new apiResponse(
+      200,
+      "Password reset successfully. Please login with your new password."
+    )
+  );
+};
+
 export {
   registerEmail,
   verifyEmail,
@@ -440,5 +569,7 @@ export {
   verifyTwoStepVerification,
   getCurrentUser,
   logout,
-  changeProfilePicture
+  changeProfilePicture,
+  forgotPassword,
+  resetPassword
 };

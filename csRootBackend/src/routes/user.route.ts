@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeProfilePicture, getCurrentUser, login, logout, registerEmail, verifyEmail, verifyTwoStepVerification } from "../controllers/user.controller";
+import { changeProfilePicture, forgotPassword, getCurrentUser, login, logout, registerEmail, resetPassword, verifyEmail, verifyTwoStepVerification } from "../controllers/user.controller";
 import verifyJWT from "../middlewares/auth.middleware";
 import upload from "../middlewares/multer.middleware";
 import { loginLimiter, meLimiter, profilePictureLimiter, registerLimiter, twoStepLimiter, verifyEmailLimiter } from "../middlewares/rateLimiter.middleware";
@@ -14,6 +14,9 @@ router.get("/me",verifyJWT, meLimiter, getCurrentUser)
 router.post("/logout",verifyJWT,logout)
 
 router.patch("/update-profile-picture",verifyJWT, profilePictureLimiter, upload.single("profilePicture"),changeProfilePicture);
+
+router.post("/forget-password",forgotPassword);
+router.post("/reset-password",resetPassword);
 
 
 export default router;
