@@ -5,7 +5,7 @@ import sendEmailClient from "saifstack-email";
 interface SendEmailOptions {
   email: string;
   subject: string;
-  layout: string;
+  layout: string; 
 }
 
 interface SendEmailResult {
