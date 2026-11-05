@@ -10,9 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@tiptap/extension-underline": "^3.32.3",
+    "@tiptap/pm": "^3.32.3",
+    "@tiptap/react": "^3.32.3",
+    "@tiptap/starter-kit": "^3.32.3",
     "axios": "^1.19.0",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.5.2",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -23,7 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.0.4",
