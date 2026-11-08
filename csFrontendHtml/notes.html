@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Study notes on CSRoot.">
+  <title>CSRoot | Notes</title>
+  <link rel="stylesheet" href="notes.css">
+  <script src="notes.js" defer></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="main-navbar">
+      <a href="index.html" class="logo">CS</a>
+      <nav class="main-links">
+        <a href="#">Practice</a>
+        <a href="#">Tutorials</a>
+        <a href="#">Resources</a>
+        <a href="#">Roadmap</a>
+      </nav>
+      <a href="#" class="profile-link">Profile</a>
+    </div>
+
+    <nav class="subject-navbar" id="subjects"></nav>
+  </header>
+
+  <main class="notes-layout">
+    <aside class="left-panel">
+      <h3 class="panel-title" id="subject-title">Loading...</h3>
+      <nav id="chapters"></nav>
+    </aside>
+
+    <article class="main-content" id="content-scroll">
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div id="notes">
+        <p class="message">Loading notes...</p>
+      </div>
+    </article>
+
+    <aside class="right-panel">
+      <section>
+        <h3>On This Page</h3>
+        <nav id="toc"></nav>
+      </section>
+
+      <section>
+        <h3>Learning Tools</h3>
+        <a href="#">Practice Questions</a>
+        <a href="#">Quick Revision</a>
+        <a href="#">Related Topics</a>
+      </section>
+
+      <section>
+        <h3>Your Progress</h3>
+        <p class="progress-label">Reading progress</p>
+        <div class="progress-track">
+          <span id="progress"></span>
+        </div>
+        <p id="progress-text">0% completed</p>
+      </section>
+    </aside>
+  </main>
+
+</body>
+</html>
