@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react"
 
+import { useAuth } from "./context/AuthContext";
+
 import { Navbar } from "./components/Navbar";
 
 import { Login } from "./pages/Login";
@@ -14,6 +16,8 @@ import DSAProblems from "./pages/AllDsaProblems";
 import AllSubmissionsPage from "./pages/Submissions";
 import { ForgetPassword } from "./pages/ForgetPassword";
 import { ResetPassword } from "./pages/ResetPassword";
+import AdminPage from "./pages/admin/Admin";
+import CreateResource from "./pages/admin/resources/CreateResource";
 
 function NotFound() {
   return (
@@ -28,6 +32,13 @@ function NotFound() {
 }
 
 function App() {
+  const { user, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-black" />
+        );
+    }
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-black">
@@ -55,6 +66,8 @@ function App() {
             <Route path="/forgetpassword" element={<ForgetPassword />} />
             <Route path="/resetpassword" element={<ResetPassword />} />
 
+            <Route path="/admin"element={<AdminPage isAdmin={user?.role === "admin"} />}/>
+            <Route path="/admin/resources/create"element={<CreateResource isAdmin={user?.role === "admin"} />}/>
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
