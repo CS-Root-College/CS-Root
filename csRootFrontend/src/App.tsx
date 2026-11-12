@@ -14,6 +14,7 @@ import DSAProblems from "./pages/AllDsaProblems";
 import AllSubmissionsPage from "./pages/Submissions";
 import { ForgetPassword } from "./pages/ForgetPassword";
 import { ResetPassword } from "./pages/ResetPassword";
+import Notes from "./pages/Notes";
 
 function NotFound() {
   return (
@@ -54,6 +55,7 @@ function App() {
 
             <Route path="/forgetpassword" element={<ForgetPassword />} />
             <Route path="/resetpassword" element={<ResetPassword />} />
+           <Route path="/notes" element={<Notes />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
