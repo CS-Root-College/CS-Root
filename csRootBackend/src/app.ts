@@ -48,11 +48,13 @@ import userRoutes from "./routes/user.route"
 import githubRoutes from "./routes/github.route"
 import compilerRoutes from "./routes/compiler.route";
 import dsaRoutes from "./routes/dsa.route";
+import resourceRoutes from "./routes/resource.route";
 
 app.use("/api/v1/users",userRoutes)
 app.use("/api/v1/oauth",githubRoutes)
 app.use("/api/v1/compiler",compilerRoutes)
 app.use("/api/v1/problems",dsaRoutes)
+app.use("/api/v1/resources",resourceRoutes)
 
 import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
