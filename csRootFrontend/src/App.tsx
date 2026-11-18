@@ -21,6 +21,7 @@ import CreateResource from "./pages/admin/resources/CreateResource";
 
 // Notes page
 import Notes from "./pages/Notes";
+import { Dashboard } from "./pages/Dashboard";
 
 function NotFound() {
   return (
@@ -77,6 +78,7 @@ function App() {
 
             {/* Notes */}
             <Route path="/resources/notes" element={<Notes />} />
+            <Route path="/dashboard" element={<Dashboard />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
