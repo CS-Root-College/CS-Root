@@ -11,8 +11,10 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
+        console.log("Request Origin:", origin);
     const allowedOrigins = [
-        process.env.WEB_URL
+        process.env.WEB_URL,
+        
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {
@@ -49,12 +51,14 @@ import githubRoutes from "./routes/github.route"
 import compilerRoutes from "./routes/compiler.route";
 import dsaRoutes from "./routes/dsa.route";
 import resourceRoutes from "./routes/resource.route";
+import dashboardRoutes from "./routes/dashboard.route";
 
 app.use("/api/v1/users",userRoutes)
 app.use("/api/v1/oauth",githubRoutes)
 app.use("/api/v1/compiler",compilerRoutes)
 app.use("/api/v1/problems",dsaRoutes)
 app.use("/api/v1/resources",resourceRoutes)
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
