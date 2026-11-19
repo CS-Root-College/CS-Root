@@ -1,28 +1,97 @@
 import { memo, useEffect, useRef, useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
-import { Menu, X, ChevronDown } from "lucide-react";
-
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-const LOGO =
-  "https://res.cloudinary.com/djvksizg/image/upload/v1786735203/csr_dark_theme_logo.png";
+type MenuItem = {
+  label: string;
+  path: string;
+};
+
+const tutorialItems: MenuItem[] = [
+  {
+    label: "All Tutorials",
+    path: "/tutorials",
+  },
+  {
+    label: "DSA",
+    path: "/tutorials/dsa",
+  },
+  {
+    label: "OOPs",
+    path: "/tutorials/oops",
+  },
+  {
+    label: "DBMS",
+    path: "/tutorials/dbms",
+  },
+  {
+    label: "Computer Networks",
+    path: "/tutorials/computer-networks",
+  },
+  {
+    label: "Operating Systems",
+    path: "/tutorials/operating-systems",
+  },
+];
+
+const practiceItems: MenuItem[] = [
+  {
+    label: "All Problems",
+    path: "/problems",
+  },
+  {
+    label: "DSA Problems",
+    path: "/practice/dsa",
+  },
+  {
+    label: "Coding Problems",
+    path: "/practice/coding",
+  },
+  {
+    label: "MCQs",
+    path: "/practice/mcq",
+  },
+  {
+    label: "Quizzes",
+    path: "/practice/quizzes",
+  },
+];
+
+const resourceItems: MenuItem[] = [
+  {
+    label: "All Resources",
+    path: "/resources",
+  },
+  {
+    label: "Notes",
+    path: "/resources/notes",
+  },
+  {
+    label: "Books",
+    path: "/resources/books",
+  },
+  {
+    label: "Cheat Sheets",
+    path: "/resources/cheat-sheets",
+  },
+  {
+    label: "Useful Websites",
+    path: "/resources/websites",
+  },
+];
 
 const NavSkeleton = () => {
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="h-9 w-28 animate-pulse rounded-md bg-zinc-900" />
-
+    <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="h-10 w-24 animate-pulse rounded-lg bg-zinc-900" />
         <div className="hidden items-center gap-3 md:flex">
-          <div className="h-9 w-16 animate-pulse rounded-md bg-zinc-900" />
-          <div className="h-9 w-20 animate-pulse rounded-md bg-zinc-900" />
+          <div className="h-9 w-20 animate-pulse rounded-lg bg-zinc-900" />
+          <div className="h-9 w-24 animate-pulse rounded-lg bg-zinc-900" />
+          <div className="h-9 w-20 animate-pulse rounded-lg bg-zinc-900" />
         </div>
-
-        <div className="h-9 w-10 animate-pulse rounded-md bg-zinc-900 md:hidden" />
+        <div className="h-10 w-10 animate-pulse rounded-lg bg-zinc-900 md:hidden" />
       </div>
     </header>
   );
@@ -40,69 +109,188 @@ const Avatar = ({
       <img
         src={profilePicture}
         alt={username}
-        className="h-9 w-9 rounded-full object-cover"
+        className="h-9 w-9 rounded-full object-cover ring-1 ring-zinc-700"
       />
     );
   }
 
   return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-zinc-300">
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-zinc-200 ring-1 ring-zinc-700">
       {username.charAt(0).toUpperCase()}
     </div>
   );
 };
 
-export const Navbar = memo(() => {
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    logout,
-  } = useAuth();
+const DesktopDropdown = ({
+  label,
+  items,
+  active,
+}: {
+  label: string;
+  items: MenuItem[];
+  active: boolean;
+}) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+          active
+            ? "bg-zinc-900 text-white"
+            : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+        }`}
+      >
+        {label}
+        <ChevronDown
+          size={14}
+          className={`transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 pt-3">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-black/40 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mb-1 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                {label}
+              </p>
+            </div>
+            {items.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setOpen(false)}
+                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MobileDropdown = ({
+  label,
+  items,
+  open,
+  onToggle,
+  onNavigate,
+}: {
+  label: string;
+  items: MenuItem[];
+  open: boolean;
+  onToggle: () => void;
+  onNavigate: () => void;
+}) => {
+  return (
+    <div className="border-b border-zinc-900">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between py-3.5 text-left text-sm font-medium text-zinc-300"
+      >
+        {label}
+        <ChevronDown
+          size={16}
+          className={`text-zinc-600 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="mb-3 space-y-1 rounded-xl bg-zinc-900/50 p-2">
+          {items.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={onNavigate}
+              className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const Navbar = memo(() => {
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileTutorialsOpen, setMobileTutorialsOpen] = useState(false);
+  const [mobilePracticeOpen, setMobilePracticeOpen] = useState(false);
+  const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileToggleBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setMobileOpen(false);
     setProfileOpen(false);
+    setMobileTutorialsOpen(false);
+    setMobilePracticeOpen(false);
+    setMobileResourcesOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+
+      if (profileRef.current && !profileRef.current.contains(target)) {
         setProfileOpen(false);
+      }
+
+      if (
+        mobileOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(target) &&
+        mobileToggleBtnRef.current &&
+        !mobileToggleBtnRef.current.contains(target)
+      ) {
+        setMobileOpen(false);
       }
     };
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen
-      ? "hidden"
-      : "";
-
-    return () => {
-      document.body.style.overflow = "";
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [mobileOpen]);
 
@@ -110,9 +298,7 @@ export const Navbar = memo(() => {
     try {
       setProfileOpen(false);
       setMobileOpen(false);
-
       await logout();
-
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -123,268 +309,427 @@ export const Navbar = memo(() => {
     if (path === "/") {
       return location.pathname === "/";
     }
-
     return location.pathname.startsWith(path);
   };
+
+  const isTutorialActive = tutorialItems.some((item) => isActive(item.path));
+  const isPracticeActive = practiceItems.some((item) => isActive(item.path));
+  const isResourceActive = resourceItems.some((item) => isActive(item.path));
 
   if (isLoading) {
     return <NavSkeleton />;
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black">
-
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-
-        {/* Logo */}
-
-        <Link
-          to="/"
-          className="flex items-center transition-opacity hover:opacity-80"
-        >
-          <img
-            src={LOGO}
-            alt="CS Root"
-            className="h-10 w-auto object-contain"
-          />
-        </Link>
-
-        {/* Desktop Navigation */}
-
-        <div className="hidden items-center gap-2 md:flex">
-
+    <>
+      <header className="sticky top-0 z-[60] border-b border-zinc-800/80 bg-zinc-950">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             to="/"
-            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-              isActive("/")
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-            }`}
+            className="flex shrink-0 items-center transition-opacity duration-200 hover:opacity-80"
           >
-            Home
+            <img
+              src="/logo.png"
+              alt="CS Root"
+              className="h-10 w-auto object-contain"
+            />
           </Link>
 
-          {isAuthenticated && (
-            <Link
-              to="/problems"
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                isActive("/problems")
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-              }`}
-            >
-              Problems
-            </Link>
-          )}
-
-        </div>
-
-        {/* Desktop Right Side */}
-
-        <div className="hidden items-center gap-2 md:flex">
-
-          {!isAuthenticated ? (
-            <>
-              <Link
-                to="/login"
-                className="rounded-md px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-              >
-                Login
-              </Link>
-
-              <Link
-                to="/register"
-                className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
-              >
-                Sign Up
-              </Link>
-            </>
-          ) : (
-            <div
-              ref={profileRef}
-              className="relative"
-            >
-
-              <button
-                type="button"
-                onClick={() =>
-                  setProfileOpen((prev) => !prev)
-                }
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 transition hover:bg-zinc-900"
-              >
-                <Avatar
-                  username={user?.username ?? ""}
-                  profilePicture={user?.profilePicture}
-                />
-
-                <span className="max-w-32 truncate text-sm font-medium text-zinc-300">
-                  {user?.username}
-                </span>
-
-                <ChevronDown
-                  size={15}
-                  className={`text-zinc-500 transition-transform ${
-                    profileOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-md border border-zinc-800 bg-black p-1 shadow-xl">
-
-                  <div className="border-b border-zinc-900 px-3 py-3">
-                    <p className="truncate text-sm font-medium text-white">
-                      {user?.username}
-                    </p>
-
-                    <p className="mt-1 truncate text-xs text-zinc-500">
-                      {user?.email}
-                    </p>
-                  </div>
-
-                  <Link
-                    to="/profile"
-                    className="mt-1 block rounded-md px-3 py-2 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-                  >
-                    Profile
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-                  >
-                    Logout
-                  </button>
-
-                </div>
-              )}
-            </div>
-          )}
-
-        </div>
-
-        {/* Mobile Menu Button */}
-
-        <button
-          type="button"
-          aria-label="Toggle navigation"
-          aria-expanded={mobileOpen}
-          onClick={() =>
-            setMobileOpen((prev) => !prev)
-          }
-          className="rounded-md border border-zinc-800 p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white md:hidden"
-        >
-          {mobileOpen ? (
-            <X size={20} />
-          ) : (
-            <Menu size={20} />
-          )}
-        </button>
-
-      </div>
-
-      {/* Mobile Menu */}
-
-      {mobileOpen && (
-        <div className="border-t border-zinc-900 bg-black md:hidden">
-
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
-
-            {isAuthenticated && (
-              <div className="mb-5 flex items-center gap-3 border-b border-zinc-900 pb-5">
-
-                <Avatar
-                  username={user?.username ?? ""}
-                  profilePicture={user?.profilePicture}
-                />
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">
-                    {user?.username}
-                  </p>
-
-                  <p className="truncate text-xs text-zinc-500">
-                    {user?.email}
-                  </p>
-                </div>
-
-              </div>
-            )}
-
-            <div className="flex flex-col">
-
+          <nav className="hidden items-center gap-1 md:flex">
+            {!isAuthenticated && (
               <Link
                 to="/"
-                onClick={() => setMobileOpen(false)}
-                className={`border-b border-zinc-900 py-3 text-sm font-medium transition ${
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                   isActive("/")
-                    ? "text-white"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
                 }`}
               >
                 Home
               </Link>
+            )}
 
-              {isAuthenticated && (
-                <>
-                  <Link
-                    to="/problems"
-                    onClick={() => setMobileOpen(false)}
-                    className={`border-b border-zinc-900 py-3 text-sm font-medium transition ${
-                      isActive("/problems")
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
+            <DesktopDropdown
+              label="Practice"
+              items={practiceItems}
+              active={isPracticeActive}
+            />
+
+            <DesktopDropdown
+              label="Tutorials"
+              items={tutorialItems}
+              active={isTutorialActive}
+            />
+
+            <DesktopDropdown
+              label="Resources"
+              items={resourceItems}
+              active={isResourceActive}
+            />
+
+            <Link
+              to="/roadmap"
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                isActive("/roadmap")
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+              }`}
+            >
+              Roadmap
+            </Link>
+          </nav>
+
+          <div className="hidden items-center gap-2 md:flex">
+            {!isAuthenticated ? (
+              <>
+                <Link
+                  to="/about"
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive("/about")
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  }`}
+                >
+                  About Us
+                </Link>
+
+                <Link
+                  to="/contact"
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive("/contact")
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  }`}
+                >
+                  Contact Us
+                </Link>
+
+                <Link
+                  to="/login"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  to="/register"
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                >
+                  Sign Up
+                </Link>
+              </>
+            ) : (
+              <div ref={profileRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 transition hover:border-zinc-800 hover:bg-zinc-900"
+                >
+                  <Avatar
+                    username={user?.username ?? ""}
+                    profilePicture={user?.profilePicture}
+                  />
+
+                  <div className="hidden max-w-28 text-left lg:block">
+                    <p className="truncate text-sm font-medium text-zinc-200">
+                      {user?.username}
+                    </p>
+                  </div>
+
+                  <ChevronDown
+                    size={15}
+                    className={`text-zinc-500 transition-transform ${
+                      profileOpen ? "rotate-180" : ""
                     }`}
-                  >
-                    Problems
-                  </Link>
+                  />
+                </button>
 
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 transition hover:text-white"
-                  >
-                    Profile
-                  </Link>
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 max-h-96 w-64 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-black/40 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="mb-1 border-b border-zinc-900 px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          username={user?.username ?? ""}
+                          profilePicture={user?.profilePicture}
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">
+                            {user?.username}
+                          </p>
+                          <p className="truncate text-xs text-zinc-600">
+                            {user?.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="py-3 text-left text-sm font-medium text-zinc-400 transition hover:text-white"
-                  >
-                    Logout
-                  </button>
-                </>
-              )}
+                    <Link
+                      to="/"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Home
+                    </Link>
 
-              {!isAuthenticated && (
-                <div className="mt-5 flex gap-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Profile
+                    </Link>
 
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex-1 rounded-md border border-zinc-800 py-2.5 text-center text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-                  >
-                    Login
-                  </Link>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Dashboard
+                    </Link>
 
-                  <Link
-                    to="/register"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex-1 rounded-md bg-white py-2.5 text-center text-sm font-semibold text-black transition hover:bg-zinc-200"
-                  >
-                    Sign Up
-                  </Link>
+                    <Link
+                      to="/compiler"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Compiler
+                    </Link>
 
+                    <Link
+                      to="/submissions"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      My Submissions
+                    </Link>
+
+                    <Link
+                      to="/progress"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Progress
+                    </Link>
+
+                    <Link
+                      to="/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Settings
+                    </Link>
+
+                    <div className="my-1 border-t border-zinc-900" />
+
+                    <Link
+                      to="/about"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      About Us
+                    </Link>
+
+                    <Link
+                      to="/contact"
+                      onClick={() => setProfileOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Contact Us
+                    </Link>
+
+                    <div className="my-1 border-t border-zinc-900" />
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            ref={mobileToggleBtnRef}
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((prev) => !prev)}
+            className="rounded-lg border border-zinc-800 p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white md:hidden"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </header>
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 top-16 z-[70] bg-black/60 backdrop-blur-[2px] md:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <div
+            ref={mobileMenuRef}
+            onClick={(e) => e.stopPropagation()}
+            className="mx-4 mt-2 max-h-[65vh] overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {isAuthenticated && (
+              <div className="mb-4 flex items-center gap-3 border-b border-zinc-900 pb-4">
+                <Avatar
+                  username={user?.username ?? ""}
+                  profilePicture={user?.profilePicture}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">
+                    {user?.username}
+                  </p>
+                  <p className="truncate text-xs text-zinc-600">
+                    {user?.email}
+                  </p>
                 </div>
-              )}
+              </div>
+            )}
 
-            </div>
+            <Link
+              to="/"
+              onClick={() => setMobileOpen(false)}
+              className={`block border-b border-zinc-900 py-3 text-sm font-medium ${
+                isActive("/") ? "text-white" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              Home
+            </Link>
+
+            <MobileDropdown
+              label="Practice / Problems"
+              items={practiceItems}
+              open={mobilePracticeOpen}
+              onToggle={() => setMobilePracticeOpen((prev) => !prev)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+
+            <MobileDropdown
+              label="Tutorials"
+              items={tutorialItems}
+              open={mobileTutorialsOpen}
+              onToggle={() => setMobileTutorialsOpen((prev) => !prev)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+
+            <MobileDropdown
+              label="Resources"
+              items={resourceItems}
+              open={mobileResourcesOpen}
+              onToggle={() => setMobileResourcesOpen((prev) => !prev)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+
+            <Link
+              to="/roadmap"
+              onClick={() => setMobileOpen(false)}
+              className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+            >
+              Roadmap
+            </Link>
+
+            <Link
+              to="/about"
+              onClick={() => setMobileOpen(false)}
+              className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+            >
+              About Us
+            </Link>
+
+            <Link
+              to="/contact"
+              onClick={() => setMobileOpen(false)}
+              className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+            >
+              Contact Us
+            </Link>
+
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Dashboard
+                </Link>
+
+                <Link
+                  to="/compiler"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Compiler
+                </Link>
+
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Profile
+                </Link>
+
+                <Link
+                  to="/submissions"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  My Submissions
+                </Link>
+
+                <Link
+                  to="/progress"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Progress
+                </Link>
+
+                <Link
+                  to="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-zinc-900 py-3 text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Settings
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full py-3 text-left text-sm font-medium text-zinc-400 hover:text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="mt-4 flex gap-2">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex-1 rounded-lg border border-zinc-800 py-2.5 text-center text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  to="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex-1 rounded-lg bg-white py-2.5 text-center text-sm font-semibold text-black transition hover:bg-zinc-200"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
-
-    </header>
+    </>
   );
 });

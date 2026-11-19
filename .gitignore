@@ -1,0 +1,10 @@
+.vscode/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Postman files
+.postman/
+postman/

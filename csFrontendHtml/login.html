@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CS ROOT</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <img src="logo.png" alt="CS ROOT" class="auth-logo">
+        <h2>Welcome Back</h2>
+        <p>Login to your account</p>
+        
+        <form action="index.html">
+            <input type="email" placeholder="Email Address" required>
+            <input type="password" placeholder="Password" required>
+            <button type="submit" class="auth-submit">Login</button>
+        </form>
+
+        <div class="divider"><span>OR</span></div>
+        
+        <button type="button" class="github-btn" onclick="window.location.href='https://github.com/login'">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+            Login with GitHub
+        </button>
+
+        <p class="auth-link">Don't have an account? <a href="signup.html">Sign up</a></p>
+    </div>
+</body>
+</html>

@@ -561,44 +561,61 @@ const resetPassword = async (req: Request, res: Response) => {
     )
   );
 };
-const changePassword = async (req: AuthenticatedRequest, res: Response) => {
-  const { currentPassword, newPassword } = req.body;
+const changePassword = async (req: Request, res: Response) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
 
-  if (!req.user) {
-    throw new apiError(401, "Unauthorized");
-  }
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Current password and new password are required"
+            });
+        }
 
-  if (!currentPassword || !newPassword) {
-    throw new apiError(400, "Current password and new password are required");
-  }
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 8 characters long"
+            });
+        }
 
-  userValidation.password.parse(newPassword);
+        const user = await User.findById((req as any).user?._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
 
-  const user = await User.findById(req.user._id);
+        if (!user.password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password cannot be changed for OAuth accounts"
+            });
+        }
 
-  if (!user) {
-    throw new apiError(404, "User not found");
-  }
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect"
+            });
+        }
 
-  if (user.authProvider !== "email" || !user.password) {
-    throw new apiError(
-      400,
-      "Password change is not available for GitHub-authenticated accounts."
-    );
-  }
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save({ validateBeforeSave: false });
 
-  const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
-
-  if (!isPasswordCorrect) {
-    throw new apiError(401, "Incorrect current password");
-  }
-
-  user.password = await bcrypt.hash(newPassword, 10);
-  await user.save();
-
-  return res
-    .status(200)
-    .json(new apiResponse(200, "Password updated successfully"));
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully"
+        });
+    } catch (error) {
+        console.error("Error in changePassword:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
 };
 
 export {

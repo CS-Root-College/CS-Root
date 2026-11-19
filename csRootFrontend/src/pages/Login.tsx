@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-
-const api = import.meta.env.VITE_PUBLIC_BACKEND;
+import api from "../utils/axios";
 
 export function Login() {
   const navigate = useNavigate();
@@ -66,8 +65,8 @@ export function Login() {
 
       const isEmail = identifier.includes("@");
 
-      await axios.post(
-        `${api}/api/v1/users/login`,
+      await api.post(
+        `/users/login`,
         {
           ...(isEmail
             ? {
@@ -104,7 +103,7 @@ export function Login() {
 
   const handleGithubLogin = () => {
     window.location.href =
-      `${api}/api/v1/oauth/github-login`;
+      `${import.meta.env.VITE_PUBLIC_BACKEND}/oauth/github-login`;
   };
 
   return (
@@ -176,7 +175,14 @@ export function Login() {
                 disabled={loading}
                 className="w-full rounded-lg border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 transition focus:border-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
               />
-
+                <div className="mt-2 text-right">
+                  <Link
+                    to="/forgetpassword"
+                    className="text-sm text-zinc-400 transition hover:text-white hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
             </div>
 
             {error && (
