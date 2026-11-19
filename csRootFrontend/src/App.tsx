@@ -18,6 +18,7 @@ import { ForgetPassword } from "./pages/ForgetPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import AdminPage from "./pages/admin/Admin";
 import CreateResource from "./pages/admin/resources/CreateResource";
+import Settings from "./pages/Settings";
 
 // Notes page
 import Notes from "./pages/Notes";
@@ -79,6 +80,7 @@ function App() {
             {/* Notes */}
             <Route path="/resources/notes" element={<Notes />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
