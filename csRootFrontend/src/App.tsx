@@ -1,70 +1,81 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react"
+
+import { useAuth } from "./context/AuthContext";
 
 import { Navbar } from "./components/Navbar";
 
 import { Login } from "./pages/Login";
 import { CreateAccount } from "./pages/CreateAccount";
 import { VerifyEmailOtp } from "./pages/VerifyEmailOtp";
+import { Home } from "./pages/Home";
+import { Compiler } from "./pages/Compiler";
+import { Profile } from "./pages/Profile";
+import Settings from "./pages/Settings";
+import DSAProblem from "./pages/DsaProblem";
+import DSAProblems from "./pages/AllDsaProblems";
+import AllSubmissionsPage from "./pages/Submissions";
+import { ForgetPassword } from "./pages/ForgetPassword";
+import { ResetPassword } from "./pages/ResetPassword";
+import AdminPage from "./pages/admin/Admin";
+import CreateResource from "./pages/admin/resources/CreateResource";
 
 function NotFound() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-black text-white">
       <div className="text-center">
-        <h1 className="text-4xl font-bold">
-          404
-        </h1>
+        <h1 className="text-4xl font-bold">404</h1>
 
-        <p className="mt-2 text-zinc-500">
-          Page not found
-        </p>
+        <p className="mt-2 text-zinc-500">Page not found</p>
       </div>
     </div>
   );
 }
 
 function App() {
+  const { user, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-black" />
+        );
+    }
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-black">
-
         <Navbar />
 
         <main>
           <Routes>
-
             {/* Home */}
-            <Route
-              path="/"
-              element={
-                <div className="min-h-[calc(100vh-4rem)] bg-black" />
-              }
-            />
+            <Route path="/" element={<Home />} />
+
+            <Route path="/compiler" element={<Compiler />} />
 
             {/* Authentication */}
-            <Route
-              path="/login"
-              element={<Login />}
-            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/practice/dsa/:slug" element={<DSAProblem />} />
+            <Route path="/practice/dsa" element={<DSAProblems />} />
 
-            <Route
-              path="/register"
-              element={<CreateAccount />}
-            />
+            <Route path="/register" element={<CreateAccount />} />
 
-            <Route
-              path="/verify-email-otp"
-              element={<VerifyEmailOtp />}
-            />
+            <Route path="/verify-email-otp" element={<VerifyEmailOtp />} />
 
+            <Route path="/submissions" element={<AllSubmissionsPage />} />
+
+            <Route path="/forgetpassword" element={<ForgetPassword />} />
+            <Route path="/resetpassword" element={<ResetPassword />} />
+
+            <Route path="/admin"element={<AdminPage isAdmin={user?.role === "admin"} />}/>
+            <Route path="/admin/resources/create"element={<CreateResource isAdmin={user?.role === "admin"} />}/>
             {/* 404 */}
-            <Route
-              path="*"
-              element={<NotFound />}
-            />
-
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
 
+        <Analytics/>
       </div>
     </BrowserRouter>
   );

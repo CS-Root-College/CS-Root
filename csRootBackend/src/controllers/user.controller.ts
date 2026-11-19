@@ -7,434 +7,609 @@ import sendEmail from "../service/sendEmail.js";
 import { userValidation } from "../validation/user.validation";
 import redis from "../config/redis";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import generateAccessAndRefreshTokens from "../utils/jwt";
 import { welcomeEmailLayout } from "../emailLayouts/welcomeEmail";
 import { sendTwoStepVerification } from "../service/twoStepVerification";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
+import cloudinary from "../config/cloudinary";
+import uploadProfilePicture from "../service/uploadProfilePicture";
+import { forgotPasswordEmailLayout } from "../emailLayouts/forgotPasswordEmail";
 
 const registerEmail = async (req: Request, res: Response) => {
-    const { email, username, password } = req.body;
+  const { email, username, password } = req.body;
 
-    userValidation.username.parse(username);
-    userValidation.email.parse(email);
-    userValidation.password.parse(password);
+  userValidation.username.parse(username);
+  userValidation.email.parse(email);
+  userValidation.password.parse(password);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const existedUser = await User.findOne({
-        $or: [{ email }, { username }],
-    });
-    if (existedUser) {
-        throw new apiError(
-            400,
-            "User already exist with the same email or username",
-        );
-    }
-
-    //Redis exists
-    const [otpExists, registrationExists, usernameExists] = await Promise.all([
-        redis.exists(`otp:${email}`),
-        redis.exists(`registerationData:${email}`),
-        redis.exists(`pendingUsername:${username}`),
-    ]);
-
-    if (otpExists) {
-        throw new apiError(
-            400,
-            "An OTP has already been sent to this email. Please verify your account first.",
-        );
-    }
-
-    if (registrationExists) {
-        throw new apiError(
-            400,
-            "A registration request already exists for this email.",
-        );
-    }
-
-    if (usernameExists) {
-        throw new apiError(
-            400,
-            "This username is currently reserved by another pending registration.",
-        );
-    }
-
-    //Main logic/Building logic
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const registerUserInfo = {
-        email,
-        username,
-        password: hashedPassword,
-    };
-
-    await redis.set(`otp:${email}`, otp, "EX", 600);
-
-    await redis.set(
-        `registerationData:${email}`,
-        JSON.stringify(registerUserInfo),
-        "EX",
-        600,
+  const existedUser = await User.findOne({
+    $or: [{ email }, { username }],
+  });
+  if (existedUser) {
+    throw new apiError(
+      400,
+      "User already exist with the same email or username",
     );
-    await redis.set(`pendingUsername:${username}`, username, "EX", 600);
+  }
 
-    await sendEmail({
-        email,
-        subject: "Verify Your CS Root Account",
-        layout: verifyEmailLayout(username, otp),
-    });
+  //Redis exists
+  const [otpExists, registrationExists, usernameExists] = await Promise.all([
+    redis.exists(`otp:${email}`),
+    redis.exists(`registerationData:${email}`),
+    redis.exists(`pendingUsername:${username}`),
+  ]);
 
-    return res
-        .status(200)
-        .json(
-            new apiResponse(200, "Please verify your email", email)
-        );
+  if (otpExists) {
+    throw new apiError(
+      400,
+      "An OTP has already been sent to this email. Please verify your account first.",
+    );
+  }
+
+  if (registrationExists) {
+    throw new apiError(
+      400,
+      "A registration request already exists for this email.",
+    );
+  }
+
+  if (usernameExists) {
+    throw new apiError(
+      400,
+      "This username is currently reserved by another pending registration.",
+    );
+  }
+
+  //Main logic/Building logic
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const registerUserInfo = {
+    email,
+    username,
+    password: hashedPassword,
+  };
+
+  await redis.set(`otp:${email}`, otp, "EX", 600);
+
+  await redis.set(
+    `registerationData:${email}`,
+    JSON.stringify(registerUserInfo),
+    "EX",
+    600,
+  );
+  await redis.set(`pendingUsername:${username}`, username, "EX", 600);
+
+  await sendEmail({
+    email,
+    subject: "Verify Your CS Root Account",
+    layout: verifyEmailLayout(username, otp),
+  });
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Please verify your email", email));
 };
 
 const verifyEmail = async (req: Request, res: Response) => {
-    const { email, otp } = req.body;
+  const { email, otp, platform } = req.body;
 
-    const storedOtp = await redis.get(`otp:${email}`);
+  const storedOtp = await redis.get(`otp:${email}`);
 
-    if (!storedOtp) {
-        throw new apiError(
-            400,
-            "Otp expired or not found. Please request a new one."
-        );
-    }
-
-    if (storedOtp !== otp) {
-        throw new apiError(400, "Incorrect otp");
-    }
-
-    const registeredUserData = await redis.get(
-        `registerationData:${email}`
+  if (!storedOtp) {
+    throw new apiError(
+      400,
+      "Otp expired or not found. Please request a new one.",
     );
+  }
 
-    if (!registeredUserData) {
-        throw new apiError(
-            400,
-            "Registration session expired. Please register again."
-        );
-    }
+  if (storedOtp !== otp) {
+    throw new apiError(400, "Incorrect otp");
+  }
 
-    const userData = JSON.parse(registeredUserData);
+  const registeredUserData = await redis.get(`registerationData:${email}`);
 
-    const user = await User.create({
-        email: userData.email,
-        username: userData.username,
-        password: userData.password,
-        isEmailVerified: true,
-        authProvider: "email"
+  if (!registeredUserData) {
+    throw new apiError(
+      400,
+      "Registration session expired. Please register again.",
+    );
+  }
+
+  const userData = JSON.parse(registeredUserData);
+
+  const user = await User.create({
+    email: userData.email,
+    username: userData.username,
+    password: userData.password,
+    isEmailVerified: true,
+    authProvider: "email",
+  });
+
+  await redis.del(
+    `otp:${email}`,
+    `registerationData:${email}`,
+    `pendingUsername:${userData.username}`,
+  );
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  } as const;
+
+  try {
+    await sendEmail({
+      email,
+      subject: "Welcome to CS Root",
+      layout: welcomeEmailLayout(user.username),
     });
+  } catch (error) {
+    console.error("Failed to send welcome email:", error);
+  }
 
-    await redis.del(
-        `otp:${email}`,
-        `registerationData:${email}`,
-        `pendingUsername:${userData.username}`
-    );
-
-    const { accessToken, refreshToken } =
-        await generateAccessAndRefreshTokens(user._id);
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production"
-            ? "none"
-            : "lax",
-    } as const;
-
-    try {
-        await sendEmail({
-            email,
-            subject: "Welcome to CS Root",
-            layout: welcomeEmailLayout(user.username)
-        })
-    } catch (error) {
-        console.error("Failed to send welcome email:", error);
-    }
-
+  if (platform != "app") {
     return res
-        .status(200)
-        .cookie("accessToken", accessToken, {
-            ...cookieOptions,
-            maxAge: 15 * 60 * 1000,
-        })
-        .cookie("refreshToken", refreshToken, {
-            ...cookieOptions,
-            maxAge: 14 * 24 * 60 * 60 * 1000,
-        })
-        .json(
-            new apiResponse(
-                200,
-                "Welcome! User registered successfully.",
-                {
-                    user: {
-                        _id: user._id,
-                        email: user.email,
-                        username: user.username,
-                    },
-                }
-            )
-        );
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "Welcome! User registered successfully.", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
+      new apiResponse(200, "Welcome! User registered successfully.", {
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+        },
+        accessToken,
+        refreshToken,
+      }),
+    );
+  }
 };
 
 const login = async (req: Request, res: Response) => {
-    const { email, password, username } = req.body
+  const { email, password, username, platform } = req.body;
 
-    if (!email && !username) {
-        throw new apiError(404, "Please provide email or username")
-    }
+  if (!email && !username) {
+    throw new apiError(404, "Please provide email or username");
+  }
 
-    if (!password) {
-        throw new apiError(404, "Please provide password")
-    }
+  if (!password) {
+    throw new apiError(404, "Please provide password");
+  }
 
-    const user = await User.findOne({
-        $or: [
-            { email },
-            { username }
-        ]
-    })
+  const user = await User.findOne({
+    $or: [{ email }, { username }],
+  });
 
-    if (!user) {
-        throw new apiError(400, "User doesn't exist")
-    }
+  if (!user) {
+    throw new apiError(400, "User doesn't exist");
+  }
 
-    if (!user.password) {
-        throw new apiError(400, "Password didn't exist")
-    }
+  if (!user.password) {
+    throw new apiError(400, "Password didn't exist");
+  }
 
-    const isPasswordCorrect = await bcrypt.compare(
-        password,
-        user.password
-    )
+  const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
-    if (!isPasswordCorrect) {
-        throw new apiError(401, "Incorrect password")
-    }
+  if (!isPasswordCorrect) {
+    throw new apiError(401, "Incorrect password");
+  }
 
-    if (user.isBanned) {
-        throw new apiError(
-            403,
-            "Your account has been banned"
-        )
-    }
+  if (user.isBanned) {
+    throw new apiError(403, "Your account has been banned");
+  }
 
-    if (user.twoStepVerification) {
-        await sendTwoStepVerification(user)
-
-        return res.status(200).json(
-            new apiResponse(
-                200,
-                "Please confirm your account",
-                {
-                    twoFactorRequired: true,
-                    identifier: email ?? username,
-                }
-            )
-        );
-
-    }
-
-    const { accessToken, refreshToken } =
-        await generateAccessAndRefreshTokens(
-            user._id
-        )
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production"
-            ? "none"
-            : "lax",
-    } as const;
-
-    return res
-        .status(200)
-        .cookie("accessToken", accessToken, {
-            ...cookieOptions,
-            maxAge: 15 * 60 * 1000,
-        })
-        .cookie("refreshToken", refreshToken, {
-            ...cookieOptions,
-            maxAge: 14 * 24 * 60 * 60 * 1000,
-        })
-        .json(
-            new apiResponse(
-                200,
-                "User logged in successfully",
-                {
-                    user: {
-                        _id: user._id,
-                        email: user.email,
-                        username: user.username,
-                    },
-                }
-            )
-        )
-}
-
-const verifyTwoStepVerification = async (
-    req: Request,
-    res: Response
-) => {
-    const { email, username, code } = req.body
-
-    if (!email && !username) {
-        throw new apiError(
-            400,
-            "Please provide either email or username"
-        )
-    }
-
-    if (!code) {
-        throw new apiError(
-            400,
-            "Please provide verification code"
-        )
-    }
-
-    const user = await User.findOne({
-        $or: [
-            { email },
-            { username }
-        ]
-    })
-
-    if (!user) {
-        throw new apiError(
-            404,
-            "User doesn't exist"
-        )
-    }
-
-    const storedCode = await redis.get(
-        `twoStepVerification:code:${user.email}`
-    )
-
-    if (!storedCode) {
-        throw new apiError(
-            400,
-            "Verification code expired"
-        )
-    }
-
-    if (storedCode !== code) {
-        throw new apiError(
-            401,
-            "Invalid verification code"
-        )
-    }
-
-    if (user.isBanned) {
-        throw new apiError(
-            403,
-            "Your account has been banned"
-        )
-    }
-
-    const { accessToken, refreshToken } =
-        await generateAccessAndRefreshTokens(
-            user._id
-        )
-
-    await redis.del(
-        `twoStepVerification:code:${user.email}`
-    )
-
-    user.lastLogin = new Date()
-    await user.save()
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production"
-            ? "none"
-            : "lax",
-    } as const;
-
-    return res
-        .status(200)
-        .cookie("accessToken", accessToken, {
-            ...cookieOptions,
-            maxAge: 15 * 60 * 1000,
-        })
-        .cookie("refreshToken", refreshToken, {
-            ...cookieOptions,
-            maxAge: 14 * 24 * 60 * 60 * 1000,
-        })
-        .json(
-            new apiResponse(
-                200,
-                "User logged in successfully",
-                {
-                    user: {
-                        _id: user._id,
-                        email: user.email,
-                        username: user.username,
-                    }
-                }
-            )
-        )
-}
-
-const getCurrentUser = async (
-    req: AuthenticatedRequest,
-    res: Response
-) => {
-    if (!req.user) {
-        throw new apiError(401, "Unauthorized");
-    }
+  if (user.twoStepVerification) {
+    await sendTwoStepVerification(user);
 
     return res.status(200).json(
-        new apiResponse(200, "User fetched successfully", {
-            user: req.user,
-        })
+      new apiResponse(200, "Please confirm your account", {
+        twoFactorRequired: true,
+        identifier: email ?? username,
+      }),
     );
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  } as const;
+
+  if (platform != "app") {
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "User logged in successfully", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
+      new apiResponse(200, "User logged in successfully", {
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+        },
+        accessToken,
+        refreshToken,
+      }),
+    );
+  }
 };
 
-const logout = async (
-    req: AuthenticatedRequest,
-    res: Response
-) => {
-    if (!req.user) {
-        throw new apiError(401, "Unauthorized");
-    }
+const verifyTwoStepVerification = async (req: Request, res: Response) => {
+  const { email, username, code, platform } = req.body;
 
+  if (!email && !username) {
+    throw new apiError(400, "Please provide either email or username");
+  }
+
+  if (!code) {
+    throw new apiError(400, "Please provide verification code");
+  }
+
+  const user = await User.findOne({
+    $or: [{ email }, { username }],
+  });
+
+  if (!user) {
+    throw new apiError(404, "User doesn't exist");
+  }
+
+  const storedCode = await redis.get(`twoStepVerification:code:${user.email}`);
+
+  if (!storedCode) {
+    throw new apiError(400, "Verification code expired");
+  }
+
+  if (storedCode !== code) {
+    throw new apiError(401, "Invalid verification code");
+  }
+
+  if (user.isBanned) {
+    throw new apiError(403, "Your account has been banned");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  await redis.del(`twoStepVerification:code:${user.email}`);
+
+  user.lastLogin = new Date();
+  await user.save();
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  } as const;
+
+  if (platform != "app") {
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      })
+      .json(
+        new apiResponse(200, "User logged in successfully", {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+          },
+        }),
+      );
+  } else {
+    return res.status(200).json(
+      new apiResponse(200, "User logged in successfully", {
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+        },
+        accessToken,
+        refreshToken,
+      }),
+    );
+  }
+};
+
+const getCurrentUser = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) {
+    throw new apiError(401, "Unauthorized");
+  }
+
+  return res.status(200).json(
+    new apiResponse(200, "User fetched successfully", {
+      user: req.user,
+    }),
+  );
+};
+
+const logout = async (req: AuthenticatedRequest, res: Response) => {
+  if (req.user) {
     await redis.del(`refreshToken:${req.user._id}`);
 
     req.user.refreshToken = undefined;
 
     await req.user.save({
-        validateBeforeSave: false,
+      validateBeforeSave: false,
     });
+  }
 
-    res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-    });
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/",
+  } as const;
 
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-    });
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
-    return res.status(200).json(
-        new apiResponse(200, "User logged out successfully")
+  return res
+    .status(200)
+    .json(new apiResponse(200, "User logged out successfully"));
+};
+
+const changeProfilePicture = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  if (!req.user) {
+    throw new apiError(401, "Unauthorized");
+  }
+  if (!req.file) {
+    throw new apiError(400, "Please upload an image");
+  }
+  const oldProfilePicturePublicId = req.user.profilePicturePublicId;
+  const result = await uploadProfilePicture(req.file.path);
+  if (
+    oldProfilePicturePublicId &&
+    oldProfilePicturePublicId !== result.public_id
+  ) {
+    try {
+      await cloudinary.uploader.destroy(oldProfilePicturePublicId);
+    } catch (error) {
+      console.error("Failed to delete old profile picture:", error);
+    }
+  }
+  req.user.profilePicture = result.secure_url;
+  req.user.profilePicturePublicId = result.public_id;
+  await req.user.save();
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, "Profile picture updated successfully", {
+        profilePicture: req.user.profilePicture,
+        profilePicturePublicId: req.user.profilePicturePublicId,
+      }),
     );
 };
 
-export {
-    registerEmail,
-    verifyEmail,
-    login,
-    verifyTwoStepVerification,
-    getCurrentUser,
-    logout
+const forgotPassword = async (req: Request, res: Response) => {
+  const { identifier } = req.body;
 
+  if (!identifier || typeof identifier !== "string") {
+    throw new apiError(400, "Email or username is required");
+  }
+
+  const value = identifier.trim().toLowerCase();
+
+  const user = await User.findOne({
+    $or: [
+      { email: value },
+      { username: value },
+    ],
+  });
+
+  if (!user) {
+    throw new apiError(404, "No account found with this email or username");
+  }
+
+  if (user.authProvider !== "email") {
+    throw new apiError(
+      400,
+      "This account uses GitHub authentication. Please login using GitHub."
+    );
+  }
+
+  if (!user.email) {
+    throw new apiError(400, "No email is associated with this account.");
+  }
+
+  const emailHash = crypto
+    .createHash("sha256")
+    .update(user.email.toLowerCase())
+    .digest("hex");
+
+  const cooldownKey = `passwordResetCooldown:${emailHash}`;
+
+  const cooldown = await redis.set(
+    cooldownKey,
+    "1",
+    "EX",
+    60,
+    "NX"
+  );
+
+  if (!cooldown) {
+    throw new apiError(
+      429,
+      "Please wait before requesting another reset link."
+    );
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  const resetKey = `passwordReset:${hashedToken}`;
+
+  try {
+    await redis.set(resetKey, user._id.toString(), "EX", 900);
+
+    const webUrl = process.env.WEB_URL!.replace(/\/$/, "");
+
+    const resetLink = `${webUrl}/resetpassword?token=${resetToken}`;
+
+    await sendEmail({
+      email: user.email,
+      subject: "Reset Your CS Root Password",
+      layout: forgotPasswordEmailLayout(user.username, resetLink),
+    });
+  } catch (error) {
+    await redis.del(resetKey, cooldownKey);
+    throw error;
+  }
+
+  return res.status(200).json(
+    new apiResponse(200, "Password reset link sent successfully.")
+  );
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  if (!token || typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  userValidation.password.parse(password);
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const resetKey = `passwordReset:${hashedToken}`;
+
+  const userId = await redis.getdel(resetKey);
+
+  if (!userId) {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user || user.authProvider !== "email") {
+    throw new apiError(400, "Invalid or expired reset link");
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  user.set("refreshToken", undefined);
+
+  await user.save();
+
+  await redis.del(`refreshToken:${user._id}`);
+
+  return res.status(200).json(
+    new apiResponse(
+      200,
+      "Password reset successfully. Please login with your new password."
+    )
+  );
+};
+const changePassword = async (req: AuthenticatedRequest, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!req.user) {
+    throw new apiError(401, "Unauthorized");
+  }
+
+  if (!currentPassword || !newPassword) {
+    throw new apiError(400, "Current password and new password are required");
+  }
+
+  userValidation.password.parse(newPassword);
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new apiError(404, "User not found");
+  }
+
+  if (user.authProvider !== "email" || !user.password) {
+    throw new apiError(
+      400,
+      "Password change is not available for GitHub-authenticated accounts."
+    );
+  }
+
+  const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isPasswordCorrect) {
+    throw new apiError(401, "Incorrect current password");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Password updated successfully"));
+};
+
+export {
+  registerEmail,
+  verifyEmail,
+  login,
+  verifyTwoStepVerification,
+  getCurrentUser,
+  logout,
+  changeProfilePicture,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 };
