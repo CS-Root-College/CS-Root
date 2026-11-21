@@ -10,6 +10,7 @@ import { submissionValidation } from "../validation/dsaSubmission.validation";
 import { executeCode } from "../service/judge0.service";
 import type { Judge0Response } from "../service/judge0.service";
 import mongoose from "mongoose";
+import { recordActivity } from "../service/activity.service";
 
 const determineSubmissionStatus = (
     judge0Response: Judge0Response,
@@ -289,6 +290,16 @@ const submitCode = async (req: AuthenticatedRequest, res: Response) => {
                     },
                     { session }
                 );
+
+                await recordActivity({
+            userId: new mongoose.Types.ObjectId(userId),
+            activityType: "problem_solved",
+            referenceId: problem._id,
+            eventKey: `problem_solved:${problem._id}`,
+            countsForStreak: true,
+            countsForContribution: true,
+            session,
+            });
             }
 
             await problem.save({ session });
