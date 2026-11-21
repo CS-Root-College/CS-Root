@@ -2,6 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors"
 
+
 // Cron
 
 const app = express();
@@ -46,8 +47,9 @@ app.get("/health", (req, res) => {
 });
 
 //Routing
-import userRoutes from "./routes/user.route"
-import githubRoutes from "./routes/github.route"
+// Routing
+import userRoutes from "./routes/user.route";
+import githubRoutes from "./routes/github.route";
 import compilerRoutes from "./routes/compiler.route";
 import dsaRoutes from "./routes/dsa.route";
 import resourceRoutes from "./routes/resource.route";

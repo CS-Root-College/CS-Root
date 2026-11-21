@@ -5,6 +5,13 @@ build/
 coverage/
 
 *.tsbuildinfo
+# Postman local configuration
+.postman/
+
+# Nested environment files
+**/.env
+**/.env.*
+!**/.env.example
 
 .env
 .env.*
@@ -51,3 +58,15 @@ docker-compose.override.yml
 
 prisma/dev.db
 prisma/dev.db-journal
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Postman
+.postman/
+postman/
