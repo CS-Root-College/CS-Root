@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -18,6 +17,8 @@ import { ForgetPassword } from "./pages/ForgetPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import AdminPage from "./pages/admin/Admin";
 import CreateResource from "./pages/admin/resources/CreateResource";
+import NotesManagement from "./pages/admin/NotesManagement";
+import ResourceManagement from "./pages/admin/ResourceManagement";
 import Settings from "./pages/Settings";
 
 // Notes page
@@ -69,6 +70,10 @@ function App() {
 
             {/* Admin */}
             <Route
+              path="/admin/notes"
+              element={<NotesManagement isAdmin={user?.role === "admin"} />}
+            />
+            <Route
               path="/admin"
               element={<AdminPage isAdmin={user?.role === "admin"} />}
             />
@@ -76,6 +81,7 @@ function App() {
               path="/admin/resources/create"
               element={<CreateResource isAdmin={user?.role === "admin"} />}
             />
+            <Route path="/admin/resources" element={<ResourceManagement />} />
 
             {/* Notes */}
             <Route path="/resources/notes" element={<Notes />} />

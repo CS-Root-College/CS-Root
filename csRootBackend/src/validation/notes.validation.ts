@@ -94,3 +94,24 @@ export const createNoteArticleValidation = z.object({
     )
     .min(1, "Article must contain at least one content block."),
 });
+// Update article validation
+export const updateNoteArticleValidation = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, "Article title must contain at least 3 characters.")
+    .max(200, "Article title cannot exceed 200 characters."),
+
+  content: z
+    .array(
+      z.discriminatedUnion("type", [
+        headingBlock,
+        paragraphBlock,
+        imageBlock,
+        listBlock,
+        codeBlock,
+        quoteBlock,
+      ])
+    )
+    .min(1, "Article must contain at least one content block."),
+});

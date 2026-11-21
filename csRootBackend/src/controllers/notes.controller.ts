@@ -1,4 +1,3 @@
-
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import slugify from "slugify";
@@ -19,8 +18,8 @@ import {
   createNoteChapterValidation,
   createNoteTopicValidation,
   createNoteArticleValidation,
+  updateNoteArticleValidation,
 } from "../validation/notes.validation";
-
 // Helpers
 const isDuplicateKeyError = (error: unknown): boolean => {
   return (
@@ -39,9 +38,7 @@ const createSlug = (name: string): string => {
   });
 };
 
-
 // PUBLIC NOTES APIs
-
 
 // GET /api/v1/notes/subjects
 const getNoteSubjects = async (_req: Request, res: Response) => {
@@ -49,9 +46,9 @@ const getNoteSubjects = async (_req: Request, res: Response) => {
     .sort({ displayOrder: 1, name: 1 })
     .lean();
 
-  return res.status(200).json(
-    new apiResponse(200, "Subjects fetched successfully.", subjects)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Subjects fetched successfully.", subjects));
 };
 
 // GET /api/v1/notes/subjects/:subjectId/chapters
@@ -79,9 +76,9 @@ const getNoteChapters = async (req: Request, res: Response) => {
     .sort({ displayOrder: 1, name: 1 })
     .lean();
 
-  return res.status(200).json(
-    new apiResponse(200, "Chapters fetched successfully.", chapters)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Chapters fetched successfully.", chapters));
 };
 
 // GET /api/v1/notes/chapters/:chapterId/topics
@@ -118,9 +115,9 @@ const getNoteTopics = async (req: Request, res: Response) => {
     .sort({ displayOrder: 1, name: 1 })
     .lean();
 
-  return res.status(200).json(
-    new apiResponse(200, "Topics fetched successfully.", topics)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Topics fetched successfully.", topics));
 };
 
 // GET /api/v1/notes/topics/:topicId
@@ -169,23 +166,17 @@ const getNoteArticle = async (req: Request, res: Response) => {
     throw new apiError(404, "Published notes not found.");
   }
 
-  return res.status(200).json(
-    new apiResponse(200, "Notes fetched successfully.", article)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Notes fetched successfully.", article));
 };
-
 
 // ADMIN NOTES APIs
 // All these functions require verifyJWT + adminOnly
 
-
 // POST /api/v1/notes/admin/subjects
-const createNoteSubject = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
-  const { name, displayOrder } =
-    createNoteSubjectValidation.parse(req.body);
+const createNoteSubject = async (req: AuthenticatedRequest, res: Response) => {
+  const { name, displayOrder } = createNoteSubjectValidation.parse(req.body);
 
   const slug = createSlug(name);
 
@@ -201,9 +192,9 @@ const createNoteSubject = async (
       isPublished: false,
     });
 
-    return res.status(201).json(
-      new apiResponse(201, "Subject created as draft.", subject)
-    );
+    return res
+      .status(201)
+      .json(new apiResponse(201, "Subject created as draft.", subject));
   } catch (error) {
     if (isDuplicateKeyError(error)) {
       throw new apiError(409, "This subject already exists.");
@@ -213,12 +204,10 @@ const createNoteSubject = async (
 };
 
 // POST /api/v1/notes/admin/chapters
-const createNoteChapter = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
-  const { subjectId, name, displayOrder } =
-    createNoteChapterValidation.parse(req.body);
+const createNoteChapter = async (req: AuthenticatedRequest, res: Response) => {
+  const { subjectId, name, displayOrder } = createNoteChapterValidation.parse(
+    req.body,
+  );
 
   if (!mongoose.isValidObjectId(subjectId)) {
     throw new apiError(400, "Invalid subject ID.");
@@ -245,14 +234,14 @@ const createNoteChapter = async (
       isPublished: false,
     });
 
-    return res.status(201).json(
-      new apiResponse(201, "Chapter created as draft.", chapter)
-    );
+    return res
+      .status(201)
+      .json(new apiResponse(201, "Chapter created as draft.", chapter));
   } catch (error) {
     if (isDuplicateKeyError(error)) {
       throw new apiError(
         409,
-        "A chapter with this name already exists in this subject."
+        "A chapter with this name already exists in this subject.",
       );
     }
     throw error;
@@ -260,12 +249,10 @@ const createNoteChapter = async (
 };
 
 // POST /api/v1/notes/admin/topics
-const createNoteTopic = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
-  const { chapterId, name, displayOrder } =
-    createNoteTopicValidation.parse(req.body);
+const createNoteTopic = async (req: AuthenticatedRequest, res: Response) => {
+  const { chapterId, name, displayOrder } = createNoteTopicValidation.parse(
+    req.body,
+  );
 
   if (!mongoose.isValidObjectId(chapterId)) {
     throw new apiError(400, "Invalid chapter ID.");
@@ -292,14 +279,14 @@ const createNoteTopic = async (
       isPublished: false,
     });
 
-    return res.status(201).json(
-      new apiResponse(201, "Topic created as draft.", topic)
-    );
+    return res
+      .status(201)
+      .json(new apiResponse(201, "Topic created as draft.", topic));
   } catch (error) {
     if (isDuplicateKeyError(error)) {
       throw new apiError(
         409,
-        "A topic with this name already exists in this chapter."
+        "A topic with this name already exists in this chapter.",
       );
     }
     throw error;
@@ -307,45 +294,43 @@ const createNoteTopic = async (
 };
 
 // POST /api/v1/notes/admin/articles
-const createNoteArticle = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+const createNoteArticle = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user._id;
 
-  const { topicId, title, content: validatedContent } =
-  createNoteArticleValidation.parse(req.body);
+  const {
+    topicId,
+    title,
+    content: validatedContent,
+  } = createNoteArticleValidation.parse(req.body);
 
-const content: INoteContentBlock[] = validatedContent.map((block) => {
-  switch (block.type) {
-    case "heading":
-    case "paragraph":
-    case "code":
-    case "quote":
-      return {
-        type: block.type,
-        content: block.content,
-        ...(block.type === "code" && block.language !== undefined
-          ? { language: block.language }
-          : {}),
-      };
+  const content: INoteContentBlock[] = validatedContent.map((block) => {
+    switch (block.type) {
+      case "heading":
+      case "paragraph":
+      case "code":
+      case "quote":
+        return {
+          type: block.type,
+          content: block.content,
+          ...(block.type === "code" && block.language !== undefined
+            ? { language: block.language }
+            : {}),
+        };
 
-    case "image":
-      return {
-        type: "image",
-        url: block.url,
-        ...(block.caption !== undefined
-          ? { caption: block.caption }
-          : {}),
-      };
+      case "image":
+        return {
+          type: "image",
+          url: block.url,
+          ...(block.caption !== undefined ? { caption: block.caption } : {}),
+        };
 
-    case "list":
-      return {
-        type: "list",
-        items: block.items,
-      };
-  }
-});
+      case "list":
+        return {
+          type: "list",
+          items: block.items,
+        };
+    }
+  });
 
   if (!mongoose.isValidObjectId(topicId)) {
     throw new apiError(400, "Invalid topic ID.");
@@ -375,29 +360,150 @@ const content: INoteContentBlock[] = validatedContent.map((block) => {
       publishedAt: null,
     });
 
-    return res.status(201).json(
-      new apiResponse(201, "Article created as draft.", article)
-    );
+    return res
+      .status(201)
+      .json(new apiResponse(201, "Article created as draft.", article));
   } catch (error) {
     if (isDuplicateKeyError(error)) {
-      throw new apiError(
-        409,
-        "An article already exists for this topic."
-      );
+      throw new apiError(409, "An article already exists for this topic.");
     }
     throw error;
   }
 };
 
+// PUT /api/v1/notes/admin/articles/:articleId
+const updateNoteArticle = async (req: AuthenticatedRequest, res: Response) => {
+  const { articleId } = req.params;
+
+  if (!mongoose.isValidObjectId(articleId)) {
+    throw new apiError(400, "Invalid article ID.");
+  }
+
+  const { title, content: validatedContent } =
+    updateNoteArticleValidation.parse(req.body);
+
+  const content: INoteContentBlock[] = validatedContent.map((block) => {
+    switch (block.type) {
+      case "heading":
+      case "paragraph":
+      case "code":
+      case "quote":
+        return {
+          type: block.type,
+          content: block.content,
+          ...(block.type === "code" && block.language !== undefined
+            ? { language: block.language }
+            : {}),
+        };
+
+      case "image":
+        return {
+          type: "image",
+          url: block.url,
+          ...(block.caption !== undefined ? { caption: block.caption } : {}),
+        };
+
+      case "list":
+        return {
+          type: "list",
+          items: block.items,
+        };
+    }
+  });
+
+  const article = await NoteArticle.findById(articleId);
+
+  if (!article) {
+    throw new apiError(404, "Article not found.");
+  }
+
+  article.title = title;
+  article.content = content;
+  article.updatedBy = req.user._id;
+
+  await article.save();
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Article updated successfully.", article));
+};
+
+// ADMIN NOTES LISTING APIs
+
+// GET /api/v1/notes/admin/subjects
+const getAdminNoteSubjects = async (_req: Request, res: Response) => {
+  const subjects = await NoteSubject.find()
+    .sort({ displayOrder: 1, name: 1 })
+    .lean();
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, "Admin subjects fetched successfully.", subjects),
+    );
+};
+
+// GET /api/v1/notes/admin/subjects/:subjectId/chapters
+const getAdminNoteChapters = async (req: Request, res: Response) => {
+  const { subjectId } = req.params;
+
+  if (!mongoose.isValidObjectId(subjectId)) {
+    throw new apiError(400, "Invalid subject ID.");
+  }
+
+  const chapters = await NoteChapter.find()
+    .where("subject")
+    .equals(subjectId)
+    .sort({ displayOrder: 1, name: 1 })
+    .lean();
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, "Admin chapters fetched successfully.", chapters),
+    );
+};
+
+// GET /api/v1/notes/admin/chapters/:chapterId/topics
+const getAdminNoteTopics = async (req: Request, res: Response) => {
+  const { chapterId } = req.params;
+
+  if (!mongoose.isValidObjectId(chapterId)) {
+    throw new apiError(400, "Invalid chapter ID.");
+  }
+
+  const topics = await NoteTopic.find()
+    .where("chapter")
+    .equals(chapterId)
+    .sort({ displayOrder: 1, name: 1 })
+    .lean();
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Admin topics fetched successfully.", topics));
+};
+
+// GET /api/v1/notes/admin/topics/:topicId/article
+const getAdminNoteArticle = async (req: Request, res: Response) => {
+  const { topicId } = req.params;
+
+  if (!mongoose.isValidObjectId(topicId)) {
+    throw new apiError(400, "Invalid topic ID.");
+  }
+
+  const article = await NoteArticle.findOne()
+    .where("topic")
+    .equals(topicId)
+    .lean();
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Admin article fetched successfully.", article));
+};
 
 // ADMIN PUBLISH APIs
 
-
 // PATCH /api/v1/notes/admin/subjects/:subjectId/publish
-const publishNoteSubject = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+const publishNoteSubject = async (req: AuthenticatedRequest, res: Response) => {
   const { subjectId } = req.params;
 
   if (!mongoose.isValidObjectId(subjectId)) {
@@ -407,23 +513,20 @@ const publishNoteSubject = async (
   const subject = await NoteSubject.findByIdAndUpdate(
     subjectId,
     { $set: { isPublished: true } },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!subject) {
     throw new apiError(404, "Subject not found.");
   }
 
-  return res.status(200).json(
-    new apiResponse(200, "Subject published successfully.", subject)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Subject published successfully.", subject));
 };
 
 // PATCH /api/v1/notes/admin/chapters/:chapterId/publish
-const publishNoteChapter = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+const publishNoteChapter = async (req: AuthenticatedRequest, res: Response) => {
   const { chapterId } = req.params;
 
   if (!mongoose.isValidObjectId(chapterId)) {
@@ -448,16 +551,13 @@ const publishNoteChapter = async (
   chapter.isPublished = true;
   await chapter.save();
 
-  return res.status(200).json(
-    new apiResponse(200, "Chapter published successfully.", chapter)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Chapter published successfully.", chapter));
 };
 
 // PATCH /api/v1/notes/admin/topics/:topicId/publish
-const publishNoteTopic = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+const publishNoteTopic = async (req: AuthenticatedRequest, res: Response) => {
   const { topicId } = req.params;
 
   if (!mongoose.isValidObjectId(topicId)) {
@@ -482,16 +582,13 @@ const publishNoteTopic = async (
   topic.isPublished = true;
   await topic.save();
 
-  return res.status(200).json(
-    new apiResponse(200, "Topic published successfully.", topic)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Topic published successfully.", topic));
 };
 
 // PATCH /api/v1/notes/admin/articles/:articleId/publish
-const publishNoteArticle = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+const publishNoteArticle = async (req: AuthenticatedRequest, res: Response) => {
   const { articleId } = req.params;
 
   if (!mongoose.isValidObjectId(articleId)) {
@@ -541,9 +638,9 @@ const publishNoteArticle = async (
 
   await article.save();
 
-  return res.status(200).json(
-    new apiResponse(200, "Article published successfully.", article)
-  );
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Article published successfully.", article));
 };
 
 export {
@@ -551,6 +648,10 @@ export {
   getNoteChapters,
   getNoteTopics,
   getNoteArticle,
+  getAdminNoteSubjects,
+  getAdminNoteChapters,
+  getAdminNoteTopics,
+  getAdminNoteArticle,
   createNoteSubject,
   createNoteChapter,
   createNoteTopic,
@@ -559,4 +660,5 @@ export {
   publishNoteChapter,
   publishNoteTopic,
   publishNoteArticle,
+  updateNoteArticle,
 };
