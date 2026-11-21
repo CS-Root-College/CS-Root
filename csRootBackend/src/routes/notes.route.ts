@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 
 import verifyJWT from "../middlewares/auth.middleware";
@@ -9,6 +8,10 @@ import {
   getNoteChapters,
   getNoteTopics,
   getNoteArticle,
+  getAdminNoteSubjects,
+  getAdminNoteChapters,
+  getAdminNoteTopics,
+  getAdminNoteArticle,
   createNoteSubject,
   createNoteChapter,
   createNoteTopic,
@@ -17,6 +20,7 @@ import {
   publishNoteChapter,
   publishNoteTopic,
   publishNoteArticle,
+  updateNoteArticle,
 } from "../controllers/notes.controller";
 
 const router = Router();
@@ -32,34 +36,68 @@ router.post("/admin/subjects", verifyJWT, adminOnly, createNoteSubject);
 router.post("/admin/chapters", verifyJWT, adminOnly, createNoteChapter);
 router.post("/admin/topics", verifyJWT, adminOnly, createNoteTopic);
 router.post("/admin/articles", verifyJWT, adminOnly, createNoteArticle);
+// Admin listing APIs
+router.get(
+  "/admin/subjects",
+  verifyJWT,
+  adminOnly,
+  getAdminNoteSubjects
+);
+
+router.get(
+  "/admin/subjects/:subjectId/chapters",
+  verifyJWT,
+  adminOnly,
+  getAdminNoteChapters
+);
+
+router.get(
+  "/admin/chapters/:chapterId/topics",
+  verifyJWT,
+  adminOnly,
+  getAdminNoteTopics
+);
+
+router.get(
+  "/admin/topics/:topicId/article",
+  verifyJWT,
+  adminOnly,
+  getAdminNoteArticle
+);
+router.put(
+  "/admin/articles/:articleId",
+  verifyJWT,
+  adminOnly,
+  updateNoteArticle,
+);
 
 // Publish APIs
 router.patch(
   "/admin/subjects/:subjectId/publish",
   verifyJWT,
   adminOnly,
-  publishNoteSubject
+  publishNoteSubject,
 );
 
 router.patch(
   "/admin/chapters/:chapterId/publish",
   verifyJWT,
   adminOnly,
-  publishNoteChapter
+  publishNoteChapter,
 );
 
 router.patch(
   "/admin/topics/:topicId/publish",
   verifyJWT,
   adminOnly,
-  publishNoteTopic
+  publishNoteTopic,
 );
 
 router.patch(
   "/admin/articles/:articleId/publish",
   verifyJWT,
   adminOnly,
-  publishNoteArticle
+  publishNoteArticle,
 );
 
 export default router;
