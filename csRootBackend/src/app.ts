@@ -46,7 +46,7 @@ app.get("/health", (req, res) => {
     });
 });
 
-//Routing
+
 // Routing
 import userRoutes from "./routes/user.route";
 import githubRoutes from "./routes/github.route";
