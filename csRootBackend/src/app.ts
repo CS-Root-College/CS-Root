@@ -12,11 +12,11 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
-        console.log("Request Origin:", origin);
-    const allowedOrigins = [
-        process.env.WEB_URL,
-        
-    ];
+   const allowedOrigins = [
+  process.env.WEB_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
 
     if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
@@ -53,14 +53,14 @@ import githubRoutes from "./routes/github.route";
 import compilerRoutes from "./routes/compiler.route";
 import dsaRoutes from "./routes/dsa.route";
 import resourceRoutes from "./routes/resource.route";
-import dashboardRoutes from "./routes/dashboard.route";
+import notesRoutes from "./routes/notes.route";
 
-app.use("/api/v1/users",userRoutes)
-app.use("/api/v1/oauth",githubRoutes)
-app.use("/api/v1/compiler",compilerRoutes)
-app.use("/api/v1/problems",dsaRoutes)
-app.use("/api/v1/resources",resourceRoutes)
-app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/oauth", githubRoutes);
+app.use("/api/v1/compiler", compilerRoutes);
+app.use("/api/v1/problems", dsaRoutes);
+app.use("/api/v1/resources", resourceRoutes);
+app.use("/api/v1/notes", notesRoutes);
 
 import errorHandler from "./utils/errorHandler";
 app.use(errorHandler);
