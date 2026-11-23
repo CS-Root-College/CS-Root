@@ -561,6 +561,62 @@ const resetPassword = async (req: Request, res: Response) => {
     )
   );
 };
+const changePassword = async (req: Request, res: Response) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Current password and new password are required"
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 8 characters long"
+            });
+        }
+
+        const user = await User.findById((req as any).user?._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password cannot be changed for OAuth accounts"
+            });
+        }
+
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect"
+            });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully"
+        });
+    } catch (error) {
+        console.error("Error in changePassword:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
 
 export {
   registerEmail,
@@ -571,5 +627,6 @@ export {
   logout,
   changeProfilePicture,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  changePassword,
 };
