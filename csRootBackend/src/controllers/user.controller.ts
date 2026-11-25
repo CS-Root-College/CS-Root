@@ -160,7 +160,7 @@ const verifyEmail = async (req: Request, res: Response) => {
       .status(200)
       .cookie("accessToken", accessToken, {
         ...cookieOptions,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", refreshToken, {
         ...cookieOptions,
@@ -249,7 +249,7 @@ const login = async (req: Request, res: Response) => {
       .status(200)
       .cookie("accessToken", accessToken, {
         ...cookieOptions,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", refreshToken, {
         ...cookieOptions,
@@ -332,7 +332,7 @@ const verifyTwoStepVerification = async (req: Request, res: Response) => {
       .status(200)
       .cookie("accessToken", accessToken, {
         ...cookieOptions,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", refreshToken, {
         ...cookieOptions,
@@ -561,6 +561,7 @@ const resetPassword = async (req: Request, res: Response) => {
     )
   );
 };
+
 const changePassword = async (req: Request, res: Response) => {
     try {
         const { currentPassword, newPassword } = req.body;

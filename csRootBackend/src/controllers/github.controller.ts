@@ -134,7 +134,7 @@ const githubCallback = async (req: Request, res: Response) => {
     .status(200)
     .cookie("accessToken", accessToken, {
         ...cookieOptions,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 14 * 24 * 60 * 60 * 1000,
     })
     .cookie("refreshToken", refreshToken, {
         ...cookieOptions,
