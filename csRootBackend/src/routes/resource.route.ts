@@ -16,6 +16,7 @@ import {
     archiveResource,
     deleteResource,
 } from "../controllers/resource.controller";
+import upload from "../middlewares/resourceUpload.middleware";
 
 
 const router = Router();
@@ -31,7 +32,7 @@ router.get(
 );
 
 
-router.post("/create-resource", verifyJWT, adminOnly, createResource);
+router.post("/create-resource", verifyJWT, upload.array("images", 20), createResource);
 
 router.get("/get-all-resources", getPublishedResources);
 router.get("/get-resource/:slug", getPublishedResource);
