@@ -1,19 +1,16 @@
-
 import mongoose, { Schema, Types } from "mongoose";
 import type { HydratedDocument, Model } from "mongoose";
 
 export type ResourceStatus = "draft" | "published" | "archived";
 
-export type ResourceAssetPurpose = "content" | "cover";
-
 export interface IResourceAsset {
     publicId: string;
     secureUrl: string;
-    purpose: ResourceAssetPurpose;
-    format?: string | undefined;
-    bytes?: number | undefined;
-    width?: number | undefined;
-    height?: number | undefined;
+    purpose: "content";
+    format?: string;
+    bytes?: number;
+    width?: number;
+    height?: number;
     altText: string;
     caption: string;
 }
@@ -39,50 +36,55 @@ export interface IResource {
 
 export type ResourceDocument = HydratedDocument<IResource>;
 
-const resourceAssetSchema = new Schema<IResourceAsset>({
-    publicId: {
-        type: String,
-        required: true,
-        trim: true,
+const resourceAssetSchema = new Schema<IResourceAsset>(
+    {
+        publicId: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        secureUrl: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        purpose: {
+            type: String,
+            enum: ["content"],
+            default: "content",
+            required: true,
+        },
+        format: {
+            type: String,
+            trim: true,
+        },
+        bytes: {
+            type: Number,
+            min: 0,
+        },
+        width: {
+            type: Number,
+            min: 0,
+        },
+        height: {
+            type: Number,
+            min: 0,
+        },
+        altText: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+        caption: {
+            type: String,
+            trim: true,
+            default: "",
+        },
     },
-    secureUrl: {
-        type: String,
-        required: true,
-        trim: true,
-    },
-    purpose: {
-        type: String,
-        enum: ["content", "cover"],
-        default: "content",
-        required: true,
-    },
-    format: {
-        type: String,
-        trim: true,
-    },
-    bytes: {
-        type: Number,
-        min: 0,
-    },
-    width: {
-        type: Number,
-        min: 0,
-    },
-    height: {
-        type: Number,
-        min: 0,
-    },
-    altText: {
-        type: String,
-        trim: true,
-        default: "",
-    },
-    caption: {
-        type: String,
-        trim: true,
-        default: "",
-    },
-});
+    {
+        _id: false,
+    }
+);
 
 const resourceSchema = new Schema<IResource>(
     {

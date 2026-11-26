@@ -1,3 +1,4 @@
+
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -21,9 +22,14 @@ import {
     Link2,
     Minus,
     X,
-    FileImage,
     Plus,
     Save,
+    FileText,
+    Upload,
+    Sparkles,
+    BookOpen,
+    CheckCircle2,
+    Loader2,
 } from "lucide-react";
 
 type CreateResourceProps = {
@@ -37,6 +43,8 @@ type ToolButtonProps = {
     onClick: () => void;
     children: ReactNode;
 };
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const ToolButton = ({
     label,
@@ -52,10 +60,10 @@ const ToolButton = ({
         disabled={disabled}
         onMouseDown={(event) => event.preventDefault()}
         onClick={onClick}
-        className={`rounded-lg p-2 transition ${
+        className={`rounded-lg p-2.5 transition ${
             active
-                ? "bg-gray-200 text-gray-950"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-950"
+                ? "bg-gray-900 text-white"
+                : "text-gray-600 hover:bg-gray-200 hover:text-gray-950"
         } disabled:cursor-not-allowed disabled:opacity-30`}
     >
         {children}
@@ -63,26 +71,21 @@ const ToolButton = ({
 );
 
 const inputClass =
-    "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
-
-const labelClass = "mb-2 block text-sm font-medium text-gray-700";
+    "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-2 focus:ring-gray-100";
 
 const CreateResource = ({ isAdmin }: CreateResourceProps) => {
     const navigate = useNavigate();
-
     const imageInput = useRef<HTMLInputElement>(null);
-    const coverInput = useRef<HTMLInputElement>(null);
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [subject, setSubject] = useState("");
     const [tagInput, setTagInput] = useState("");
     const [tags, setTags] = useState<string[]>([]);
-    const [seoTitle, setSeoTitle] = useState("");
-    const [seoDescription, setSeoDescription] = useState("");
-    const [coverImage, setCoverImage] = useState<string | null>(null);
-    const [coverFileName, setCoverFileName] = useState("");
     const [message, setMessage] = useState("");
+    const [images, setImages] = useState<File[]>([]);
+    const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const editor = useEditor({
         extensions: [
@@ -102,7 +105,7 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
         },
         editorProps: {
             attributes: {
-                class: "min-h-[400px] px-6 py-5 outline-none text-gray-800 leading-7",
+                class: "min-h-[450px] px-6 py-6 outline-none text-gray-800 leading-8",
                 spellcheck: "true",
             },
         },
@@ -110,8 +113,8 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
 
     if (!isAdmin) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-white">
-                <div className="text-center">
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
                     <h1 className="text-2xl font-semibold text-gray-900">
                         Access denied
                     </h1>
@@ -120,7 +123,7 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                     </p>
                     <button
                         onClick={() => navigate("/")}
-                        className="mt-5 rounded-lg bg-gray-900 px-5 py-2.5 text-sm text-white transition hover:bg-gray-700"
+                        className="mt-5 rounded-xl bg-gray-900 px-5 py-3 text-sm text-white transition hover:bg-gray-700"
                     >
                         Go home
                     </button>
@@ -143,10 +146,7 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
         setTagInput("");
     };
 
-    const selectImage = (
-        event: ChangeEvent<HTMLInputElement>,
-        type: "content" | "cover"
-    ) => {
+    const selectImage = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
 
         if (!file) return;
@@ -157,26 +157,26 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            setMessage("Image size cannot exceed 5 MB.");
+        if (file.size > 10 * 1024 * 1024) {
+            setMessage("Images cannot exceed 10 MB.");
             event.target.value = "";
             return;
         }
 
-        const imageUrl = URL.createObjectURL(file);
-
-        if (type === "cover") {
-            if (coverImage) URL.revokeObjectURL(coverImage);
-
-            setCoverImage(imageUrl);
-            setCoverFileName(file.name);
-        } else {
-            editor?.chain().focus().setImage({
-                src: imageUrl,
-                alt: file.name,
-                title: file.name,
-            }).run();
+        if (!editor) {
+            event.target.value = "";
+            return;
         }
+
+        const index = images.length;
+
+        setImages((current) => [...current, file]);
+
+        editor.chain().focus().setImage({
+            src: `upload://${index}`,
+            alt: file.name,
+            title: file.name,
+        }).run();
 
         setMessage("");
         event.target.value = "";
@@ -204,7 +204,9 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
         }).run();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (saving) return;
+
         if (!title.trim() || !subject.trim()) {
             setMessage("Please enter a title and subject.");
             return;
@@ -215,30 +217,102 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
             return;
         }
 
-        setMessage(
-            "UI preview only. Backend integration is required to save resources."
+        const content = editor.getJSON();
+
+        const imageNodes: string[] = [];
+
+        const findImages = (node: any) => {
+            if (!node || typeof node !== "object") return;
+
+            if (node.type === "image" && node.attrs?.src) {
+                imageNodes.push(node.attrs.src);
+            }
+
+            if (Array.isArray(node.content)) {
+                node.content.forEach(findImages);
+            }
+        };
+
+        findImages(content);
+
+        const referencedImages = imageNodes.filter((src) =>
+            typeof src === "string" && src.startsWith("upload://")
         );
+
+        for (const src of referencedImages) {
+            const index = Number(src.replace("upload://", ""));
+
+            if (!Number.isInteger(index) || index < 0 || index >= images.length) {
+                setMessage("An image in the editor is missing its uploaded file.");
+                return;
+            }
+        }
+
+        setSaving(true);
+        setMessage("");
+        setSuccess(false);
+
+        try {
+            const formData = new FormData();
+
+            formData.append("title", title.trim());
+            formData.append("description", description.trim());
+            formData.append("subject", subject.trim());
+            formData.append("tags", JSON.stringify(tags));
+            formData.append("content", JSON.stringify(content));
+
+            images.forEach((file) => {
+                formData.append("images", file);
+            });
+
+            const response = await fetch(`${API_URL}/api/resources`, {
+                method: "POST",
+                credentials: "include",
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || result.error || "Failed to create resource."
+                );
+            }
+
+            setSuccess(true);
+            setMessage(result.message || "Resource created successfully.");
+
+            setTimeout(() => {
+                navigate("/admin/resources");
+            }, 1200);
+        } catch (error) {
+            setMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong while saving."
+            );
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-gray-900">
-            <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="min-h-screen bg-[#f6f7f9] text-gray-900">
+            <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-white/90 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[1500px] items-center justify-between px-5 py-4 lg:px-8">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <button
                             type="button"
                             onClick={() => navigate("/admin/resources")}
-                            className="rounded-lg border border-gray-200 p-2.5 text-gray-600 transition hover:bg-gray-100"
+                            className="rounded-xl border border-gray-200 p-2.5 text-gray-600 transition hover:bg-gray-100"
                         >
                             <ArrowLeft size={18} />
                         </button>
 
                         <div>
-                            <h1 className="text-base font-semibold">
-                                Create resource
-                            </h1>
+                            <h1 className="font-semibold">Create resource</h1>
                             <p className="text-xs text-gray-500">
-                                Create learning material for CS Root
+                                Build something worth learning
                             </p>
                         </div>
                     </div>
@@ -246,135 +320,184 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                     <button
                         type="button"
                         onClick={handleSave}
-                        className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700"
+                        disabled={saving}
+                        className="flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-60"
                     >
-                        <Save size={16} />
-                        Save draft
+                        {saving ? (
+                            <Loader2 size={17} className="animate-spin" />
+                        ) : (
+                            <Save size={17} />
+                        )}
+                        {saving ? "Saving..." : "Save draft"}
                     </button>
                 </div>
             </header>
 
-            <main className="mx-auto grid max-w-[1500px] grid-cols-1 items-start gap-7 px-5 py-8 lg:grid-cols-[minmax(0,1fr)_310px] lg:px-8">
+            <main className="mx-auto grid max-w-[1500px] grid-cols-1 items-start gap-7 px-5 py-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-8">
                 <div className="min-w-0 space-y-6">
                     {message && (
-                        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                            {message}
+                        <div
+                            className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-sm ${
+                                success
+                                    ? "border-green-200 bg-green-50 text-green-700"
+                                    : "border-gray-200 bg-white text-gray-700"
+                            }`}
+                        >
+                            {success && <CheckCircle2 size={18} />}
+                            <span>{message}</span>
                         </div>
                     )}
 
-                    <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <div className="mb-6">
-                            <h2 className="text-base font-semibold">
-                                Basic information
-                            </h2>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Give your resource a title and description.
-                            </p>
+                    <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+                        <div className="mb-7 flex items-center gap-3">
+                            <div className="rounded-xl bg-gray-100 p-3">
+                                <FileText size={20} />
+                            </div>
+                            <div>
+                                <h2 className="font-semibold">
+                                    Resource information
+                                </h2>
+                                <p className="text-sm text-gray-500">
+                                    Introduce your learning material
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <div>
-                                <label className={labelClass}>Title</label>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Resource title
+                                </label>
                                 <input
                                     value={title}
                                     onChange={(event) => setTitle(event.target.value)}
                                     maxLength={200}
-                                    placeholder="Enter resource title"
+                                    placeholder="Give your resource a meaningful title"
                                     className={`${inputClass} text-lg font-medium`}
                                 />
+                                <p className="mt-2 text-right text-xs text-gray-400">
+                                    {title.length}/200
+                                </p>
                             </div>
 
                             <div>
-                                <label className={labelClass}>Description</label>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Description
+                                </label>
                                 <textarea
                                     value={description}
-                                    onChange={(event) => setDescription(event.target.value)}
-                                    rows={3}
+                                    onChange={(event) =>
+                                        setDescription(event.target.value)
+                                    }
+                                    rows={4}
                                     maxLength={500}
-                                    placeholder="What will readers learn from this resource?"
+                                    placeholder="What will learners gain from this resource?"
                                     className={`${inputClass} resize-y`}
                                 />
-                                <p className="mt-1 text-right text-xs text-gray-400">
+                                <p className="mt-2 text-right text-xs text-gray-400">
                                     {description.length}/500
                                 </p>
                             </div>
 
                             <div>
-                                <label className={labelClass}>Subject</label>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Subject
+                                </label>
                                 <input
                                     value={subject}
-                                    onChange={(event) => setSubject(event.target.value)}
+                                    onChange={(event) =>
+                                        setSubject(event.target.value)
+                                    }
                                     placeholder="e.g. Computer Networks"
                                     className={inputClass}
                                 />
                             </div>
 
                             <div>
-                                <label className={labelClass}>Tags</label>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Tags
+                                </label>
 
                                 <div className="flex gap-2">
                                     <input
                                         value={tagInput}
-                                        onChange={(event) => setTagInput(event.target.value)}
+                                        onChange={(event) =>
+                                            setTagInput(event.target.value)
+                                        }
                                         onKeyDown={(event) => {
                                             if (event.key === "Enter") {
                                                 event.preventDefault();
                                                 addTag();
                                             }
                                         }}
-                                        placeholder="Add tags..."
+                                        placeholder="Add a topic or keyword"
                                         className={inputClass}
                                     />
 
                                     <button
                                         type="button"
                                         onClick={addTag}
-                                        className="rounded-lg border border-gray-300 px-4 text-sm font-medium transition hover:bg-gray-50"
+                                        className="rounded-xl border border-gray-200 px-4 transition hover:bg-gray-50"
                                     >
-                                        <Plus size={17} />
+                                        <Plus size={18} />
                                     </button>
                                 </div>
 
-                                <div className="mt-3 flex flex-wrap gap-2">
+                                <div className="mt-4 flex flex-wrap gap-2">
                                     {tags.map((tag) => (
                                         <span
                                             key={tag}
-                                            className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs text-gray-700"
+                                            className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700"
                                         >
                                             {tag}
                                             <button
                                                 type="button"
                                                 onClick={() =>
                                                     setTags((current) =>
-                                                        current.filter((item) => item !== tag)
+                                                        current.filter(
+                                                            (item) => item !== tag
+                                                        )
                                                     )
                                                 }
-                                                className="text-gray-500 hover:text-red-600"
+                                                className="text-gray-400 hover:text-red-600"
                                             >
                                                 <X size={13} />
                                             </button>
                                         </span>
                                     ))}
                                 </div>
+
+                                <p className="mt-2 text-xs text-gray-400">
+                                    Up to 10 tags
+                                </p>
                             </div>
                         </div>
                     </section>
 
-                    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="border-b border-gray-200 px-6 py-5">
-                            <h2 className="text-base font-semibold">
-                                Content editor
-                            </h2>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Write, format and add images to your resource.
-                            </p>
+                    <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+                        <div className="border-b border-gray-200 px-6 py-5 sm:px-8">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-gray-100 p-3">
+                                    <BookOpen size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="font-semibold">
+                                        Learning content
+                                    </h2>
+                                    <p className="text-sm text-gray-500">
+                                        Write, structure and illustrate
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-3">
                             <ToolButton
                                 label="Bold"
                                 active={editor?.isActive("bold")}
-                                onClick={() => editor?.chain().focus().toggleBold().run()}
+                                onClick={() =>
+                                    editor?.chain().focus().toggleBold().run()
+                                }
                             >
                                 <Bold size={17} />
                             </ToolButton>
@@ -382,7 +505,9 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                             <ToolButton
                                 label="Italic"
                                 active={editor?.isActive("italic")}
-                                onClick={() => editor?.chain().focus().toggleItalic().run()}
+                                onClick={() =>
+                                    editor?.chain().focus().toggleItalic().run()
+                                }
                             >
                                 <Italic size={17} />
                             </ToolButton>
@@ -390,7 +515,9 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                             <ToolButton
                                 label="Strikethrough"
                                 active={editor?.isActive("strike")}
-                                onClick={() => editor?.chain().focus().toggleStrike().run()}
+                                onClick={() =>
+                                    editor?.chain().focus().toggleStrike().run()
+                                }
                             >
                                 <Strikethrough size={17} />
                             </ToolButton>
@@ -490,7 +617,9 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                             <ToolButton
                                 label="Undo"
                                 disabled={!editor?.can().undo()}
-                                onClick={() => editor?.chain().focus().undo().run()}
+                                onClick={() =>
+                                    editor?.chain().focus().undo().run()
+                                }
                             >
                                 <Undo2 size={17} />
                             </ToolButton>
@@ -498,7 +627,9 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                             <ToolButton
                                 label="Redo"
                                 disabled={!editor?.can().redo()}
-                                onClick={() => editor?.chain().focus().redo().run()}
+                                onClick={() =>
+                                    editor?.chain().focus().redo().run()
+                                }
                             >
                                 <Redo2 size={17} />
                             </ToolButton>
@@ -508,165 +639,91 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                                 type="file"
                                 accept="image/*"
                                 hidden
-                                onChange={(event) => selectImage(event, "content")}
+                                onChange={selectImage}
                             />
                         </div>
 
-                        <div
-                            className="
-                                min-h-[450px] px-6 py-5
-                                [&_.tiptap]:min-h-[400px]
-                                [&_.tiptap]:text-sm
-                                [&_.tiptap]:leading-7
-                                [&_.tiptap]:text-gray-800
-                                [&_.tiptap]:outline-none
-                                [&_.tiptap_h1]:mb-4
-                                [&_.tiptap_h1]:mt-6
-                                [&_.tiptap_h1]:text-3xl
-                                [&_.tiptap_h1]:font-bold
-                                [&_.tiptap_h2]:mb-3
-                                [&_.tiptap_h2]:mt-5
-                                [&_.tiptap_h2]:text-2xl
-                                [&_.tiptap_h2]:font-semibold
-                                [&_.tiptap_p]:mb-3
-                                [&_.tiptap_ul]:mb-4
-                                [&_.tiptap_ul]:list-disc
-                                [&_.tiptap_ul]:pl-6
-                                [&_.tiptap_ol]:mb-4
-                                [&_.tiptap_ol]:list-decimal
-                                [&_.tiptap_ol]:pl-6
-                                [&_.tiptap_blockquote]:my-4
-                                [&_.tiptap_blockquote]:border-l-4
-                                [&_.tiptap_blockquote]:border-gray-300
-                                [&_.tiptap_blockquote]:pl-4
-                                [&_.tiptap_blockquote]:italic
-                                [&_.tiptap_pre]:my-4
-                                [&_.tiptap_pre]:overflow-x-auto
-                                [&_.tiptap_pre]:rounded-lg
-                                [&_.tiptap_pre]:bg-gray-900
-                                [&_.tiptap_pre]:p-4
-                                [&_.tiptap_pre]:text-sm
-                                [&_.tiptap_pre]:text-gray-100
-                                [&_.tiptap_code]:rounded
-                                [&_.tiptap_code]:bg-gray-100
-                                [&_.tiptap_code]:px-1
-                                [&_.tiptap_code]:py-0.5
-                                [&_.tiptap_code]:text-gray-800
-                                [&_.tiptap_a]:text-blue-600
-                                [&_.tiptap_a]:underline
-                                [&_.tiptap_img]:my-4
-                                [&_.tiptap_img]:max-w-full
-                                [&_.tiptap_img]:rounded-lg
-                                [&_.tiptap_hr]:my-6
-                                [&_.tiptap_hr]:border-gray-200
-                            "
-                        >
+                        <div className="min-h-[500px] px-2 py-2 [&_.tiptap]:min-h-[450px] [&_.tiptap]:outline-none [&_.tiptap_h1]:mb-4 [&_.tiptap_h1]:mt-6 [&_.tiptap_h1]:text-3xl [&_.tiptap_h1]:font-bold [&_.tiptap_h2]:mb-3 [&_.tiptap_h2]:mt-5 [&_.tiptap_h2]:text-2xl [&_.tiptap_h2]:font-semibold [&_.tiptap_p]:mb-3 [&_.tiptap_ul]:mb-4 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-6 [&_.tiptap_ol]:mb-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-6 [&_.tiptap_blockquote]:my-4 [&_.tiptap_blockquote]:border-l-4 [&_.tiptap_blockquote]:border-gray-300 [&_.tiptap_blockquote]:pl-4 [&_.tiptap_blockquote]:italic [&_.tiptap_pre]:my-4 [&_.tiptap_pre]:overflow-x-auto [&_.tiptap_pre]:rounded-xl [&_.tiptap_pre]:bg-gray-900 [&_.tiptap_pre]:p-4 [&_.tiptap_pre]:text-gray-100 [&_.tiptap_code]:rounded [&_.tiptap_code]:bg-gray-100 [&_.tiptap_code]:px-1 [&_.tiptap_code]:py-0.5 [&_.tiptap_a]:text-blue-600 [&_.tiptap_a]:underline [&_.tiptap_img]:my-5 [&_.tiptap_img]:max-w-full [&_.tiptap_img]:rounded-xl [&_.tiptap_hr]:my-6">
                             <EditorContent editor={editor} />
                         </div>
 
-                        <div className="border-t border-gray-100 px-6 py-3 text-xs text-gray-400">
-                            Your editor supports formatted text, lists, links, code and images.
-                        </div>
-                    </section>
-
-                    <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="text-base font-semibold">SEO settings</h2>
-
-                        <div className="mt-5 space-y-5">
-                            <div>
-                                <label className={labelClass}>SEO title</label>
-                                <input
-                                    value={seoTitle}
-                                    onChange={(event) => setSeoTitle(event.target.value)}
-                                    maxLength={200}
-                                    placeholder="Search engine title"
-                                    className={inputClass}
-                                />
-                            </div>
-
-                            <div>
-                                <label className={labelClass}>SEO description</label>
-                                <textarea
-                                    value={seoDescription}
-                                    onChange={(event) =>
-                                        setSeoDescription(event.target.value)
-                                    }
-                                    maxLength={500}
-                                    rows={3}
-                                    placeholder="Search engine description"
-                                    className={`${inputClass} resize-y`}
-                                />
+                        <div className="border-t border-gray-100 px-6 py-4">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <Sparkles size={14} />
+                                Rich content, images, code, links and formatting
                             </div>
                         </div>
                     </section>
                 </div>
 
                 <aside className="space-y-5">
-                    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-semibold">Cover image</h2>
-                            <FileImage size={17} className="text-gray-400" />
+                    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-xl bg-gray-100 p-3">
+                                <Upload size={18} />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-semibold">
+                                    Content images
+                                </h2>
+                                <p className="text-xs text-gray-500">
+                                    Uploaded with your resource
+                                </p>
+                            </div>
                         </div>
 
-                        <p className="mt-1 text-xs text-gray-500">
-                            Choose a thumbnail for your resource.
-                        </p>
-
-                        {coverImage ? (
-                            <div className="mt-4">
-                                <img
-                                    src={coverImage}
-                                    alt="Resource cover preview"
-                                    className="aspect-video w-full rounded-lg border border-gray-200 object-cover"
-                                />
-
-                                <p className="mt-2 truncate text-xs text-gray-500">
-                                    {coverFileName}
-                                </p>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        URL.revokeObjectURL(coverImage);
-                                        setCoverImage(null);
-                                        setCoverFileName("");
-                                    }}
-                                    className="mt-2 text-xs font-medium text-red-600 hover:text-red-700"
-                                >
-                                    Remove image
-                                </button>
+                        <div className="mt-4 rounded-2xl bg-gray-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">
+                                    Selected images
+                                </span>
+                                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700">
+                                    {images.length}
+                                </span>
                             </div>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => coverInput.current?.click()}
-                                className="mt-4 flex aspect-video w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-gray-500 transition hover:border-gray-400 hover:bg-gray-100"
-                            >
-                                <ImagePlus size={23} />
-                                <span className="mt-2 text-xs font-medium">
-                                    Upload cover image
-                                </span>
-                                <span className="mt-1 text-[11px]">
-                                    PNG, JPG or WEBP
-                                </span>
-                            </button>
+                            <p className="mt-2 text-xs leading-5 text-gray-400">
+                                Images inserted in your editor are uploaded to Cloudinary when you save.
+                            </p>
+                        </div>
+
+                        {images.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                                {images.map((file, index) => (
+                                    <div
+                                        key={`${file.name}-${index}`}
+                                        className="flex items-center gap-3 rounded-xl border border-gray-100 p-3"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-gray-700">
+                                                {file.name}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-400">
+                                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
 
-                        <input
-                            ref={coverInput}
-                            type="file"
-                            accept="image/*"
-                            hidden
-                            onChange={(event) => selectImage(event, "cover")}
-                        />
+                        <button
+                            type="button"
+                            onClick={() => imageInput.current?.click()}
+                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                        >
+                            <ImagePlus size={17} />
+                            Add image to content
+                        </button>
                     </section>
 
-                    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <h2 className="text-sm font-semibold">Resource status</h2>
+                    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold">
+                            Resource status
+                        </h2>
 
                         <div className="mt-4 flex items-center justify-between">
                             <span className="text-sm text-gray-500">
-                                Current status
+                                Publication
                             </span>
                             <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
                                 Draft
@@ -674,18 +731,34 @@ const CreateResource = ({ isAdmin }: CreateResourceProps) => {
                         </div>
 
                         <p className="mt-3 text-xs leading-5 text-gray-500">
-                            Resources will remain unpublished until you publish them.
+                            This resource will be saved as a draft and won't be published automatically.
                         </p>
                     </section>
 
-                    <section className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                        <h2 className="text-sm font-semibold text-blue-900">
-                            Editor preview
+                    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold">
+                            Before saving
                         </h2>
-                        <p className="mt-2 text-xs leading-5 text-blue-700">
-                            Images are currently previewed locally. Permanent image
-                            uploads and saving will be connected later.
-                        </p>
+
+                        <div className="mt-4 space-y-3">
+                            {[
+                                "Add a descriptive title",
+                                "Select the subject",
+                                "Write your learning content",
+                                "Check inserted images",
+                            ].map((item) => (
+                                <div
+                                    key={item}
+                                    className="flex items-start gap-3 text-sm text-gray-600"
+                                >
+                                    <CheckCircle2
+                                        size={16}
+                                        className="mt-0.5 shrink-0 text-gray-400"
+                                    />
+                                    {item}
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 </aside>
             </main>
