@@ -42,7 +42,7 @@ const createResource = async (
             contentType: req.headers["content-type"]
         });
 
-        const userId = req.user?.userId;
+        const userId = req.user?._id;
 
         console.log("[2] Validating user ID:", userId);
 
@@ -396,21 +396,21 @@ const createResource = async (
 };
 
 const getResources = async (
-    req: AuthenticatedRequest,
-    res: Response
+  req: AuthenticatedRequest,
+  res: Response
 ) => {
-    const resources = await Resource.find()
-        .sort({ createdAt: -1 })
-        .populate("createdBy", "username email")
-        .lean();
+  const resources = await Resource.find()
+    .sort({ createdAt: -1 })
+    .populate("createdBy", "username email")
+    .lean();
 
-    return res.status(200).json(
-        new apiResponse(
-            200,
-            "Resources fetched successfully.",
-            resources
-        )
-    );
+  return res.status(200).json(
+    new apiResponse(
+      200,
+      "Resources fetched successfully.",
+      resources
+    )
+  );
 };
 
 const getResourceById = async (

@@ -35,7 +35,7 @@ router.get(
 router.post("/create-resource", verifyJWT, upload.array("images", 20), createResource);
 
 router.get("/get-all-resources", getPublishedResources);
-router.get("/get-resource/:slug", getPublishedResource);
+router.get("/:slug", getPublishedResource);
 
 router.patch("/update-resource/:resourceId", verifyJWT, adminOnly, updateResource);
 router.patch("/publish-resource/:resourceId", verifyJWT, adminOnly, publishResource);

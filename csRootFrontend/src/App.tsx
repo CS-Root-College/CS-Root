@@ -24,6 +24,8 @@ import Settings from "./pages/Settings";
 // Notes page
 import Notes from "./pages/Notes";
 import { Dashboard } from "./pages/Dashboard";
+import Resources from "./pages/admin/resources/Resources";
+import ResourceDetails from "./pages/admin/resources/ResourceDetails";
 
 function NotFound() {
   return (
@@ -79,9 +81,11 @@ function App() {
             />
             <Route
               path="/admin/resources/create"
-              element={<CreateResource isAdmin={user?.role === "admin"} />}
+              element={<CreateResource />}
             />
             <Route path="/admin/resources" element={<ResourceManagement />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/resources/:slug" element={<ResourceDetails />} />
 
             {/* Notes */}
             <Route path="/resources/notes" element={<Notes />} />
