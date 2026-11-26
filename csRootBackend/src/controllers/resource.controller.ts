@@ -29,35 +29,87 @@ const createResource = async (
     res: Response,
     next: NextFunction
 ) => {
+    console.log("\n========== CREATE RESOURCE START ==========");
+
     const uploadedPublicIds: string[] = [];
     let resourceCreated = false;
 
     try {
+        console.log("[1] Request information:", {
+            method: req.method,
+            url: req.originalUrl,
+            userId: req.user?.userId,
+            contentType: req.headers["content-type"]
+        });
+
         const userId = req.user?.userId;
+
+        console.log("[2] Validating user ID:", userId);
 
         if (!userId || !Types.ObjectId.isValid(userId)) {
             throw new apiError(401, "Unauthorized.");
         }
 
+        console.log("[3] Fetching user from MongoDB");
+
         const user = await User.findById(userId);
+
+        console.log("[3] User result:", {
+            found: Boolean(user),
+            id: user?._id
+        });
 
         if (!user) {
             throw new apiError(404, "User not found.");
         }
 
-        if (!hasPremiumAccess(user)) {
-            throw new apiError(403, "Premium subscription required to create a resource.");
+        console.log("[4] Checking premium access");
+
+        const premiumAccess = hasPremiumAccess(user);
+
+        console.log("[4] Premium access result:", premiumAccess);
+
+        if (!premiumAccess) {
+            throw new apiError(
+                403,
+                "Premium subscription required to create a resource."
+            );
         }
 
+        console.log("[5] Checking uploaded files");
+
         const files = (req.files || []) as Express.Multer.File[];
+
+        console.log("[5] Files received:", files.length);
+
+        files.forEach((file, index) => {
+            console.log(`[5.${index + 1}] File information:`, {
+                name: file.originalname,
+                type: file.mimetype,
+                size: file.size,
+                fieldname: file.fieldname
+            });
+        });
+
+        console.log("[6] Body keys:", Object.keys(req.body || {}));
 
         const {
             title,
             description = "",
             subject,
             tags = "[]",
-            content,
+            content
         } = req.body;
+
+        console.log("[7] Received data:", {
+            title,
+            description,
+            subject,
+            tags,
+            contentType: typeof content,
+            contentLength:
+                typeof content === "string" ? content.length : undefined
+        });
 
         if (typeof title !== "string" || !title.trim()) {
             throw new apiError(400, "Title is required.");
@@ -71,21 +123,40 @@ const createResource = async (
             typeof description !== "string" ||
             description.length > 500
         ) {
-            throw new apiError(400, "Description must not exceed 500 characters.");
+            throw new apiError(
+                400,
+                "Description must not exceed 500 characters."
+            );
         }
+
+        console.log("[8] Parsing content and tags");
 
         let parsedContent: Record<string, any>;
         let parsedTags: string[];
 
         try {
             parsedContent =
-                typeof content === "string" ? JSON.parse(content) : content;
+                typeof content === "string"
+                    ? JSON.parse(content)
+                    : content;
 
             parsedTags =
-                typeof tags === "string" ? JSON.parse(tags) : tags;
-        } catch {
+                typeof tags === "string"
+                    ? JSON.parse(tags)
+                    : tags;
+
+            console.log("[8] Parsing successful");
+        } catch (parseError) {
+            console.error("[8] Parsing error:", parseError);
             throw new apiError(400, "Invalid content or tags format.");
         }
+
+        console.log("[9] Content validation:", {
+            contentType: parsedContent?.type,
+            contentLength: parsedContent?.content?.length
+        });
+
+        console.log("[9] Tags:", parsedTags);
 
         if (
             !parsedContent ||
@@ -99,14 +170,42 @@ const createResource = async (
             throw new apiError(400, "Tags must be an array.");
         }
 
-        if (!parsedTags.every((tag: unknown) => typeof tag === "string")) {
+        if (
+            !parsedTags.every(
+                (tag: unknown) => typeof tag === "string"
+            )
+        ) {
             throw new apiError(400, "Invalid tags.");
         }
 
+        console.log("[10] Starting Cloudinary upload process");
+
         const uploadedAssets: IResourceAsset[] = [];
 
-        for (const file of files) {
+        for (let index = 0; index < files.length; index++) {
+            const file = files[index];
+
+            if (!file) {
+                console.warn(`[10.${index + 1}] File missing at index`);
+                continue;
+            }
+
+            console.log(`[10.${index + 1}] Uploading file:`, {
+                name: file.originalname,
+                type: file.mimetype,
+                size: file.size
+            });
+
             const result = await uploadResourceImage(file);
+
+            console.log(`[10.${index + 1}] Upload successful:`, {
+                publicId: result.public_id,
+                secureUrl: result.secure_url,
+                format: result.format,
+                bytes: result.bytes,
+                width: result.width,
+                height: result.height
+            });
 
             uploadedPublicIds.push(result.public_id);
 
@@ -119,30 +218,70 @@ const createResource = async (
                 width: result.width,
                 height: result.height,
                 altText: "",
-                caption: "",
+                caption: ""
             });
         }
 
+        console.log("[11] Total uploaded assets:", uploadedAssets.length);
+
+        console.log("[12] Cloning content");
+
         const contentWithImages = structuredClone(parsedContent);
 
-        const replaceImageSources = (node: any) => {
+        const replaceImageSources = (node: any): void => {
             if (!node || typeof node !== "object") return;
 
-            if (node.type === "image" && node.attrs?.src) {
+            if (
+                node.type === "image" &&
+                node.attrs?.src
+            ) {
                 const src = node.attrs.src;
 
-                if (typeof src === "string" && src.startsWith("upload://")) {
-                    const index = Number(src.replace("upload://", ""));
+                console.log("[12] Found image node:", src);
+
+                if (
+                    typeof src === "string" &&
+                    src.startsWith("upload://")
+                ) {
+                    const index = Number(
+                        src.replace("upload://", "")
+                    );
+
+                    console.log("[12] Image index:", index);
+                    console.log("[12] Assets available:", uploadedAssets.length);
 
                     if (
                         !Number.isInteger(index) ||
                         index < 0 ||
                         index >= uploadedAssets.length
                     ) {
-                        throw new apiError(400, "Invalid image upload reference.");
+                        console.error("[12] Invalid image reference:", {
+                            src,
+                            index,
+                            uploadedAssetsLength: uploadedAssets.length
+                        });
+
+                        throw new apiError(
+                            400,
+                            "Invalid image upload reference."
+                        );
                     }
 
-                    node.attrs.src = uploadedAssets[index]?.secureUrl;
+                    const asset = uploadedAssets[index];
+
+                    if (!asset) {
+                        throw new apiError(
+                            400,
+                            "Uploaded image asset not found."
+                        );
+                    }
+
+                    node.attrs.src = asset.secureUrl;
+
+                    console.log("[12] Image source replaced:", {
+                        index,
+                        secureUrl: asset.secureUrl
+                    });
                 }
             }
 
@@ -151,13 +290,21 @@ const createResource = async (
             }
         };
 
+        console.log("[13] Replacing image sources");
+
         replaceImageSources(contentWithImages);
+
+        console.log("[13] Final content:", contentWithImages);
+
+        console.log("[14] Generating slug");
 
         const baseSlug = slugify(title, {
             lower: true,
             strict: true,
-            trim: true,
+            trim: true
         });
+
+        console.log("[14] Base slug:", baseSlug);
 
         if (!baseSlug) {
             throw new apiError(400, "A valid title is required.");
@@ -166,42 +313,83 @@ const createResource = async (
         let slug = baseSlug;
         let suffix = 1;
 
+        console.log("[15] Checking slug uniqueness");
+
         while (await Resource.exists({ slug })) {
+            console.log("[15] Slug exists:", slug);
+
             slug = `${baseSlug}-${suffix++}`;
         }
+
+        console.log("[15] Final slug:", slug);
+
+        console.log("[16] Creating resource in MongoDB");
 
         const resource = await Resource.create({
             title: title.trim(),
             slug,
             description: description.trim(),
             subject: subject.trim(),
-            tags: [...new Set(parsedTags.map((tag: string) => tag.trim()).filter(Boolean))],
+            tags: [
+                ...new Set(
+                    parsedTags
+                        .map((tag: string) => tag.trim())
+                        .filter(Boolean)
+                )
+            ],
             content: contentWithImages,
             assets: uploadedAssets,
             createdBy: user._id,
             status: "published",
-            publishedAt:  new Date(),
+            publishedAt: new Date(),
             isFeatured: false,
             viewCount: 0,
             seo: {
                 title: title.trim(),
-                description: description.trim().slice(0, 160),
-            },
+                description: description.trim().slice(0, 160)
+            }
         });
 
         resourceCreated = true;
 
+        console.log("[17] Resource successfully created:", {
+            id: resource._id,
+            title: resource.title,
+            slug: resource.slug,
+            status: resource.status,
+            assets: resource.assets.length
+        });
+
+        console.log("========== CREATE RESOURCE SUCCESS ==========\n");
+
         return res.status(201).json(
-            new apiResponse(201, "Resource created successfully.", resource)
+            new apiResponse(
+                201,
+                "Resource created successfully.",
+                resource
+            )
         );
     } catch (error) {
-        if (!resourceCreated && uploadedPublicIds.length) {
+        console.error("\n========== CREATE RESOURCE ERROR ==========");
+        console.error("[ERROR]", error);
+        console.error(
+            "[ERROR STACK]",
+            error instanceof Error ? error.stack : undefined
+        );
+
+        if (!resourceCreated && uploadedPublicIds.length > 0) {
+            console.log("[ROLLBACK] Removing Cloudinary assets:", uploadedPublicIds);
+
             try {
                 await deleteResourceImages(uploadedPublicIds);
+
+                console.log("[ROLLBACK] Cloudinary cleanup completed");
             } catch (cleanupError) {
-                console.error("Cloudinary rollback failed:", cleanupError);
+                console.error("[ROLLBACK] Cleanup failed:", cleanupError);
             }
         }
+
+        console.error("========== CREATE RESOURCE FAILED ==========\n");
 
         next(error);
     }

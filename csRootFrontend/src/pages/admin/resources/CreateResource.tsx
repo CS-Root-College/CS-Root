@@ -39,7 +39,7 @@ type ToolProps = {
   children: React.ReactNode;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_PUBLIC_BACKEND || "";
 
 const extensions = [
   StarterKit,
@@ -343,7 +343,7 @@ const CreateResource = (_props: Props) => {
       });
 
       const response = await axios.post(
-        `${API_URL}/api/v1/resources/create-resource`,
+        `${API_URL}/resources/create-resource`,
         formData,
         {
           withCredentials: true
