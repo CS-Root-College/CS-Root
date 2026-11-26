@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 type Props = { isAdmin?: boolean };
+
 type ToolProps = {
   label: string;
   active?: boolean;
@@ -42,7 +43,10 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 
 const extensions = [
   StarterKit,
-  Image.configure({ inline: false }),
+  Image.configure({
+    inline: false,
+    allowBase64: false
+  }),
   Link.configure({
     openOnClick: false,
     autolink: true,
@@ -262,6 +266,7 @@ const CreateResource = (_props: Props) => {
 
   const openPreview = () => {
     if (!validate()) return;
+
     setPreviewOpen(true);
   };
 
@@ -345,11 +350,9 @@ const CreateResource = (_props: Props) => {
         }
       );
 
-      const result = response.data;
-
       setPreviewOpen(false);
       setMessage(
-        result.message || "Resource published successfully."
+        response.data?.message || "Resource published successfully."
       );
 
       setTimeout(() => navigate("/admin/resources"), 1000);
@@ -705,7 +708,7 @@ const CreateResource = (_props: Props) => {
             />
           </div>
 
-          <div className="min-h-[560px] px-2 py-2 [&_.tiptap]:min-h-[520px] [&_.tiptap]:outline-none [&_.tiptap_h1]:mb-4 [&_.tiptap_h1]:mt-6 [&_.tiptap_h1]:text-3xl [&_.tiptap_h1]:font-bold [&_.tiptap_h2]:mb-3 [&_.tiptap_h2]:mt-5 [&_.tiptap_h2]:text-2xl [&_.tiptap_h2]:font-semibold [&_.tiptap_p]:mb-3 [&_.tiptap_ul]:mb-4 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-6 [&_.tiptap_ol]:mb-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-6 [&_.tiptap_blockquote]:my-4 [&_.tiptap_blockquote]:border-l-4 [&_.tiptap_blockquote]:border-gray-300 [&_.tiptap_blockquote]:pl-4 [&_.tiptap_blockquote]:italic [&_.tiptap_pre]:my-4 [&_.tiptap_pre]:overflow-x-auto [&_.tiptap_pre]:rounded-xl [&_.tiptap_pre]:bg-gray-900 [&_.tiptap_pre]:p-4 [&_.tiptap_pre]:text-gray-100 [&_.tiptap_code]:rounded [&_.tiptap_code]:bg-gray-100 [&_.tiptap_code]:px-1 [&_.tiptap_code]:py-0.5 [&_.tiptap_a]:text-blue-600 [&_.tiptap_a]:underline [&_.tiptap_img]:my-5 [&_.tiptap_img]:max-w-full [&_.tiptap_img]:rounded-xl [&_.tiptap_hr]:my-6">
+          <div className="min-h-[560px] px-2 py-2 [&_.tiptap]:min-h-[520px] [&_.tiptap]:outline-none [&_.tiptap_h1]:mb-4 [&_.tiptap_h1]:mt-6 [&_.tiptap_h1]:text-3xl [&_.tiptap_h1]:font-bold [&_.tiptap_h2]:mb-3 [&_.tiptap_h2]:mt-5 [&_.tiptap_h2]:text-2xl [&_.tiptap_h2]:font-semibold [&_.tiptap_p]:mb-3 [&_.tiptap_ul]:mb-4 [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-6 [&_.tiptap_ol]:mb-4 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-6 [&_.tiptap_blockquote]:my-4 [&_.tiptap_blockquote]:border-l-4 [&_.tiptap_blockquote]:border-gray-300 [&_.tiptap_blockquote]:pl-4 [&_.tiptap_blockquote]:italic [&_.tiptap_pre]:my-4 [&_.tiptap_pre]:overflow-x-auto [&_.tiptap_pre]:rounded-xl [&_.tiptap_pre]:bg-gray-900 [&_.tiptap_pre]:p-4 [&_.tiptap_pre]:text-gray-100 [&_.tiptap_code]:rounded [&_.tiptap_code]:bg-gray-100 [&_.tiptap_code]:px-1 [&_.tiptap_code]:py-0.5 [&_.tiptap_a]:text-blue-600 [&_.tiptap_a]:underline [&_.tiptap_img]:mx-auto [&_.tiptap_img]:my-5 [&_.tiptap_img]:block [&_.tiptap_img]:h-auto [&_.tiptap_img]:max-h-[450px] [&_.tiptap_img]:max-w-full [&_.tiptap_img]:rounded-xl [&_.tiptap_img]:object-contain [&_.tiptap_hr]:my-6">
             <EditorContent editor={editor} />
           </div>
 
@@ -768,7 +771,7 @@ const CreateResource = (_props: Props) => {
               </div>
 
               <div
-                className="prose prose-gray max-w-none [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-2xl [&_h2]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_img]:rounded-xl"
+                className="prose prose-gray max-w-none [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-2xl [&_h2]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_img]:mx-auto [&_img]:my-6 [&_img]:block [&_img]:h-auto [&_img]:max-h-[450px] [&_img]:max-w-full [&_img]:rounded-xl [&_img]:object-contain"
                 dangerouslySetInnerHTML={{ __html: previewHTML }}
               />
             </div>

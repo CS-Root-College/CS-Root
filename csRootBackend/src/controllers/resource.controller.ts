@@ -179,7 +179,7 @@ const createResource = async (
             content: contentWithImages,
             assets: uploadedAssets,
             createdBy: user._id,
-            status: "draft",
+            status: "published",
             publishedAt: null,
             isFeatured: false,
             viewCount: 0,
